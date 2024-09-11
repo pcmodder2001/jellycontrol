@@ -1,0 +1,5 @@
+
+Django>=3.2
+requests>=2.25.1
+pytz>=2021.1  # Required for timezone utilities
+jsonlib>=1.6.1  # For handling JSON
