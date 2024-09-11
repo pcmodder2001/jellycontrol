@@ -1,11 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
-from .utils import is_valid_password
 from jellyfin_project import settings
 from .models import Config, CustomUser, Function, Invitation, License, LogEntry
 import requests
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import login
 from django.http import HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -13,7 +12,6 @@ from datetime import datetime
 from jellyfin_control.forms import LicenseForm
 from django.utils import timezone
 from django.contrib.auth import logout as django_logout
-from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 import json
 from django.views.decorators.http import require_POST
