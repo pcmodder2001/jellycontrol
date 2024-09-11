@@ -10,7 +10,7 @@
             <div class="uk-card uk-card-default uk-card-body uk-border-rounded">
                 <div class="uk-cover-container movie-image-container">
                     {% if movie.ImageTags.Primary %}
-                        <img src="{{ config.server_url }}/Items/{{ movie.Id }}/Images/Primary?tag={{ movie.ImageTags.Primary }}&quality=90&maxWidth=800" 
+                        <img src="{{ config.server_url }}Items/{{ movie.Id }}/Images/Primary?tag={{ movie.ImageTags.Primary }}&quality=90&maxWidth=800" 
                              alt="{{ movie.Name }}" class="uk-width-1-1 movie-image">
                     {% else %}
                         <img src="{% static 'images/no-image.png' %}" alt="No image available" class="uk-width-1-1 movie-image">
