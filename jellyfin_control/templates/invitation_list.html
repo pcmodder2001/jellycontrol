@@ -8,7 +8,6 @@
     <div class="uk-flex uk-flex-between uk-flex-middle uk-margin-bottom">
         <h1 class="uk-heading-medium">Invitation List</h1>
         <a href="{% url 'invitation_create' %}" class="uk-button uk-button-primary uk-button-large uk-border-rounded"><span uk-icon="icon: plus-circle" style="margin-right: 10px;"></span> Create Invite</a>
-
     </div>
 
     <!-- Invitations Table -->
@@ -22,6 +21,9 @@
                         <th>Used Count</th>
                         <th>Expiry</th>
                         <th>Created At</th>
+                        {% if user.is_superuser %}
+                            <th>Owner</th>
+                        {% endif %}
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -39,6 +41,9 @@
                                 {% endif %}
                             </td>
                             <td>{{ invitation.created_at|date:"F j, Y, g:i a" }}</td>
+                            {% if user.is_superuser %}
+                                <td>{{ invitation.user }}</td>
+                            {% endif %}
                             <td>
                                 <form action="{% url 'invitation_delete' invitation.id %}" method="post" class="uk-inline">
                                     {% csrf_token %}

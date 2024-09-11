@@ -352,6 +352,14 @@
             justify-content: space-between;
             /* Distributes content evenly */
         }
+
+        .text-box {
+            background-color: rgb(235, 235, 235);
+            color: rgb(0, 0, 0);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
     </style>
 
 </head>
@@ -366,33 +374,38 @@
         <span class="toggle-btn" id="toggle-btn">☰</span>
         <ul class="uk-nav uk-nav-default">
             {% if user.is_authenticated %}
-            
             {% if is_superuser %}
-            <li><a href="{% url 'view_users' %}"><span uk-icon="icon: users"></span> <span class="text">Users</span></a></li>
+            <li><a href="{% url 'view_users' %}"><span uk-icon="icon: users"></span> <span class="text">Users</span></a>
+            </li>
+            <li><a href="{% url 'settings' %}"><span uk-icon="icon: settings"></span> <span
+                        class="text">Settings</span></a></li>
+            <li><a href="{% url 'view_devices' %}"><span uk-icon="icon: desktop"></span> <span
+                        class="text">Devices</span></a></li>
+            <li><a href="{% url 'sessions_page' %}"><span uk-icon="icon: tv"></span> <span
+                        class="text">Sessions</span></a></li>
+            <li><a href="{% url 'logs' %}"><span uk-icon="icon: file-text"></span> <span class="text">Logs</span></a>
+            </li>
             {% endif %}
-
-            <li><a href="{% url 'invitation_list' %}"><span uk-icon="icon: social"></span> <span class="text">Invites</span></a></li>
-
-            {% if is_superuser %}
-            <li><a href="{% url 'settings' %}"><span uk-icon="icon: settings"></span> <span class="text">Settings</span></a></li>
-            {% endif %}
-
-            <li><a href="{% url 'movie_list' %}"><span uk-icon="icon: video-camera"></span> <span class="text">Movies</span></a></li>
-
-            {% if is_superuser %}
-            <li><a href="{% url 'view_devices' %}"><span uk-icon="icon: desktop"></span><span class="text">Devices</span></a></li>
-            <li><a href="{% url 'sessions_page' %}"><span uk-icon="icon: tv"></span><span class="text">Sessions</span></a></li>
-            <li><a href="{% url 'logs' %}"><span uk-icon="icon: file-text"></span> <span class="text">Logs</span></a></li>
-            {% endif %}
-
-            <li><a href="{% url 'logout' %}"><span uk-icon="icon: sign-out"></span> <span class="text">Logout</span></a></li>
+            <li><a href="{% url 'invitation_list' %}"><span uk-icon="icon: social"></span> <span
+                        class="text">Invites</span></a></li>
+            <li><a href="{% url 'movie_list' %}"><span uk-icon="icon: video-camera"></span> <span
+                        class="text">Movies</span></a></li>
+            <li><a href="{% url 'logout' %}"><span uk-icon="icon: sign-out"></span> <span class="text">Logout</span></a>
+            </li>
             {% else %}
-
-            <li><a href="{% url 'login' %}"><span uk-icon="icon: sign-in"></span> <span class="text">Login</span></a></li>
-            <li><a href="{% url 'enter_invite' %}"><span uk-icon="icon: plus-circle"></span> <span class="text">Sign Up</span></a></li>
+            <li><a href="{% url 'login' %}"><span uk-icon="icon: sign-in"></span> <span class="text">Login</span></a>
+            </li>
+            <li><a href="{% url 'enter_invite' %}"><span uk-icon="icon: plus-circle"></span> <span class="text">Sign
+                        Up</span></a></li>
             {% endif %}
         </ul>
-
+        {% if user.is_authenticated %}
+        <footer>
+            <div class="text-box">
+                <p>{{ username }}</p>
+            </div>
+        </footer>
+        {% endif %}
     </div>
 
     <div class="content" id="content">
@@ -402,7 +415,6 @@
         </div>
     </div>
 
-    <!-- Add SweetAlert JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.6.22/js/uikit.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.6.22/js/uikit-icons.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
@@ -421,8 +433,6 @@
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
         });
-
-        // Display SweetAlert messages if any
 
     </script>
     <script>
@@ -446,5 +456,6 @@
         {% endfor %}
     </script>
 </body>
+
 
 </html>

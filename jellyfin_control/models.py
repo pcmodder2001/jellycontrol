@@ -67,6 +67,7 @@ class Invitation(models.Model):
     used_count = models.IntegerField(default=0)
     expiry = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f"Invitation for {self.invite_code}"
@@ -79,7 +80,6 @@ class Invitation(models.Model):
             from django.utils import timezone
             return self.expiry < timezone.now()
         return False
-    
 
 class LogEntry(models.Model):
     ACTION_CHOICES = [

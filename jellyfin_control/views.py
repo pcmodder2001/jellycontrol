@@ -730,6 +730,8 @@ def create_user(request):
                     user=request.user,
                     message=f"User '{new_user_data['Name']}' created successfully."
                 )
+                token = access_token
+                sync_users(server_url, token)
                 return redirect('view_users')  # Redirect to view users page or success page
             else:
                 # Handle failed creation
@@ -784,15 +786,28 @@ def delete_user(request, user_id):
                 # Send DELETE request to Jellyfin API to delete the user
                 response = requests.delete(delete_user_url, headers=headers)
                 if response.status_code == 204:
-                    messages.success(request, f"User '{username}' successfully deleted")
-                    LogEntry.objects.create(
-                        action='DELETED',
-                        user=request.user,
-                        message=f"User '{username}' deleted successfully."
-                    )
+                    # Delete the user from Django database
+                    try:
+                        django_user = CustomUser.objects.get(jellyfin_user_id=user_id)
+                        django_user.delete()
+                        messages.success(request, f"User '{username}' successfully deleted from Jellyfin and Django.")
+                        LogEntry.objects.create(
+                            action='DELETED',
+                            user=request.user,
+                            message=f"User '{username}' deleted successfully from Jellyfin and Django."
+                        )
+                    except CustomUser.DoesNotExist:
+                        messages.warning(request, f"User '{username}' was not found in the Django database.")
+                        LogEntry.objects.create(
+                            action='DELETED',
+                            user=request.user,
+                            message=f"Attempted to delete user '{username}' from Jellyfin. User was not found in the Django database."
+                        )
+                    token = access_token
+                    sync_users(server_url, token)
                     return redirect('view_users')  # Redirect to view users page or success page
                 else:
-                    error_message = f"Failed to delete user '{username}': {response.status_code} - {response.text}"
+                    error_message = f"Failed to delete user '{username}' from Jellyfin: {response.status_code} - {response.text}"
                     return HttpResponseBadRequest(error_message)
             else:
                 error_message = f"Failed to fetch user details: {user_response.status_code} - {user_response.text}"
@@ -805,9 +820,15 @@ def delete_user(request, user_id):
     return HttpResponseBadRequest("Invalid request method")
 
 
+
 @login_required
 def invitation_list(request):
-    invitations = Invitation.objects.all()
+    user = request.user
+    if user.is_superuser:
+        invitations = Invitation.objects.all()
+    else:
+        invitations = Invitation.objects.filter(user=user)
+    
     return render(request, 'invitation_list.html', {'invitations': invitations})
 
 @login_required
@@ -855,7 +876,8 @@ def invitation_create(request):
 
         # Create invitation
         try:
-            invitation = Invitation(invite_code=invite_code, max_users=max_users, expiry=expiry)
+            user = request.user
+            invitation = Invitation(invite_code=invite_code, max_users=max_users, expiry=expiry, user=user)
             invitation.save()
             messages.success(request, "Invitation created successfully.")
             LogEntry.objects.create(
@@ -877,7 +899,6 @@ def invitation_create(request):
 
 
 @login_required
-
 def invitation_delete(request, invitation_id):
     if request.method == 'POST':
         try:
@@ -933,15 +954,12 @@ def register(request, invite_code):
         return redirect('enter_invite')
 
     if request.method == 'POST':
-        
-
         username = request.POST.get('username')
         password = request.POST.get('password')
         password2 = request.POST.get('password2')
         email = request.POST.get('email')
 
         # Check if the username (email) is already taken in Jellyfin
-        config = Config.objects.first()
         access_token = config.jellyfin_api_key
         server_url = config.server_url
         user_check_url = f"{server_url}/Users/{username}"
@@ -983,6 +1001,15 @@ def register(request, invite_code):
         try:
             user = CustomUser.objects.create_user(email=email, password=password, jellyfin_user_id=jellyfin_user_id)
             messages.success(request, "Registration successful. You can now log in.")
+            
+            # Log the user creation
+            log_message = (f"User created: {email} using invitation code: {invite_code}. "
+                           f"Invitation created by: {invitation.user.email if invitation.user else 'Unknown'}")
+            LogEntry.objects.create(
+                action='CREATED',
+                user=invitation.user,
+                message=log_message
+            )
         except ValueError as e:
             messages.error(request, str(e))
             return redirect('enter_invite')

@@ -77,7 +77,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'jellyfin_control.context_processors.is_superuser',  # Add this line
-
+                'jellyfin_control.context_processors.user_info',
             ],
         },
     },
