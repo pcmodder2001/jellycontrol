@@ -144,8 +144,8 @@ def setup(request):
                             config.save()
 
                             log_action('INFO', 'API key created and saved.', user)
-
-                            return redirect("setup_success")
+                            messages.success(request, "Set up succsessful you can now login! ")
+                            return redirect("login")
                         else:
                             log_action('ERROR', 'No API key found after creation.', user)
                             return JsonResponse({'success': False, 'error': "No API key found after creation."})
@@ -230,18 +230,9 @@ def authenticate_admin(request, server_url, username, password):
         if is_admin:
             messages.success(request, "Authentication successful. User is an administrator.")
             
-            # Fetch the user from the Django database
-            User = get_user_model()
-            try:
-                user = User.objects.get(email=username)
-                # Update the user to be a superuser if they aren't already
-                if not user.is_superuser:
-                    user.is_superuser = True
-                    user.is_staff = True  # Usually, a superuser is also staff
-                    user.save()
-            except User.DoesNotExist:
-                messages.error(request, "User does not exist in the local database.")
-                return None
+            # Fetch or create the user in the Django database
+     
+
 
             return access_token
         else:
@@ -256,15 +247,38 @@ def sync_users(server_url, token):
     headers = {
         "X-Emby-Token": token
     }
+    
+    # Fetch the users from the server
     response = requests.get(users_url, headers=headers)
+    
     if response.status_code == 200:
         users = response.json()
+        
         for user in users:
-            db_user, created = CustomUser.objects.get_or_create(jellyfin_user_id=user['Id'])
-            db_user.email = user['Name']
-            db_user.save()
+            jellyfin_user_id = user.get('Id')
+            email = user.get('Name')
+            is_admin = user.get('Policy', {}).get('IsAdministrator', False)
+            
+            # Retrieve or create the user
+            db_user, created = CustomUser.objects.get_or_create(jellyfin_user_id=jellyfin_user_id)
+            
+            if created:
+                # If the user was created, set additional fields
+                db_user.email = email
+                db_user.is_superuser = is_admin  # Set superuser status based on admin flag
+                db_user.is_staff = is_admin  # Usually, a superuser is also staff
+                db_user.save()
+                print(f"Created new user: {db_user.email} (Superuser: {db_user.is_superuser})")
+            else:
+                # If the user already exists, update their email and admin status
+                db_user.email = email
+                if is_admin != db_user.is_superuser:
+                    db_user.is_superuser = is_admin
+                    db_user.is_staff = is_admin  # Usually, a superuser is also staff
+                    db_user.save()
+                print(f"Updated existing user: {db_user.email} (Superuser: {db_user.is_superuser})")
     else:
-        raise Exception("Failed to retrieve users")
+        raise Exception(f"Failed to retrieve users: {response.status_code} - {response.text}")
 
 def setup_success(request):
     return render(request, 'control/success.html')
@@ -287,13 +301,50 @@ def authenticate_with_jellyfin(email, password, ):
     }
 
     response = requests.post(login_url, json=payload, headers=headers)
-
     if response.status_code == 200:
         return True, response.json().get('AccessToken')
     else:
         return False, None
 
+def check_and_update_superuser(request, email, access_token):
+    """Check if the user is an administrator and update superuser status in Django."""
+    # Retrieve server URL from Config model
+    config = Config.objects.first()
+    if not config:
+        messages.error(request, "Configuration not found.")
+        return
+
+    server_url = config.server_url
+    user_id = CustomUser.objects.filter(email=email).first().jellyfin_user_id
+
+    user_policy_url = f"{server_url}Users/{user_id}/Policy"
+    headers = {
+        "X-Emby-Token": access_token
+    }
+    print(user_policy_url)
+    response = requests.post(user_policy_url, headers=headers)
+    print(response)
+    if response.status_code == 200:
+        policy_data = response.json()
+        is_admin = policy_data.get('IsAdministrator', False)
+        
+        # Update the user's superuser status
+        db_user, _ = CustomUser.objects.get_or_create(email=email)
+        if is_admin:
+            db_user.is_superuser = True
+            db_user.is_staff = True  # Superusers are usually staff
+        else:
+            db_user.is_superuser = False
+            db_user.is_staff = False
+        db_user.save()
+    else:
+        messages.error(request, f"Failed to check user admin status: {response.status_code} - {response.text}")
+
 def custom_login(request):
+    config = Config.objects.first()
+    if not config:
+        return redirect("setup")
+
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
@@ -316,6 +367,12 @@ def custom_login(request):
 
                     # Save access token in session
                     request.session['jellyfin_access_token'] = access_token
+                    server_url = config.server_url
+                    token = request.session['jellyfin_access_token']
+                    
+                    # Sync users and update superuser status
+                    sync_users(server_url, token)
+
                     messages.success(request, 'Signed in successfully')
                     LogEntry.objects.create(
                         action='LOGIN',
@@ -324,10 +381,10 @@ def custom_login(request):
                     )
                     return redirect('home')
                 except CustomUser.DoesNotExist:
-                    messages.error(request, "User not found")
+                    messages.error(request, "User not found in the local database.")
             else:
                 # Display error message for incorrect credentials
-                return render(request, 'login.html', {'error_message': 'Incorrect username or password'})
+                messages.error(request, 'Incorrect username or password')
 
         else:
             # If email or password is missing in POST data
@@ -353,7 +410,7 @@ def custom_logout(request):
 @login_required
 def home(request):
     config = Config.objects.first()
-    if not config:
+    if config.server_url == None:
         messages.error(request, "Configuration error: No Jellyfin server URL configured.")
         return redirect('/setup')
 
@@ -849,6 +906,9 @@ def invitation_delete(request, invitation_id):
         return HttpResponseBadRequest("Invalid request method")
     
 def enter_invite(request):
+    config = Config.objects.first()
+    if not config:
+        return redirect("setup")
     if request.method == 'POST':
         invite_code = request.POST.get('invite_code')
         print('invite code: ', invite_code)
@@ -857,6 +917,9 @@ def enter_invite(request):
 
 
 def register(request, invite_code):
+    config = Config.objects.first()
+    if not config:
+        return redirect("setup")
     try:
         invitation = Invitation.objects.get(invite_code=invite_code)
     except Invitation.DoesNotExist:

@@ -58,7 +58,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'jellyfin_control.middleware.LicenseKeyMiddleware',
+    #'jellyfin_control.middleware.LicenseKeyMiddleware',
     #'jellyfin_control.middleware.CheckJellyfinAccessTokenMiddleware',  # Add this line
 
 ]
