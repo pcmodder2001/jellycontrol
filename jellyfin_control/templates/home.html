@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="uk-container uk-margin-large-top uk-margin-large-bottom">
+    <!-- Welcome Card -->
+    <div class="uk-card uk-box-shadow-medium">
+        <h1 class="uk-heading-medium uk-text-center">Welcome to Your Dashboard</h1>
+        <p class="uk-text-center uk-text-lead">
+            {% if is_superuser %}
+                Manage your Jellyfin users, invitations, and settings here.
+            {% else %}
+                View your latest media updates and system stats.
+            {% endif %}
+        </p>
+        
+        <!-- Quick Access Buttons -->
+        <div class="uk-grid uk-grid-large uk-child-width-1-3@s uk-flex-center uk-margin-top" uk-grid>
+            {% if is_superuser %}
+            <div>
+                <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
+                    <h3 class="uk-card-title uk-text-center">Users</h3>
+                    <p class="uk-text-center">View and manage user accounts.</p>
+                    <div class="uk-flex uk-flex-center">
+                        <a href="{% url 'view_users' %}" class="uk-button uk-button-default uk-button-large">Manage Users</a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            <div>
+                <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
+                    <h3 class="uk-card-title uk-text-center">Invitations</h3>
+                    <p class="uk-text-center">Create and manage invite codes.</p>
+                    <div class="uk-flex uk-flex-center">
+                        <a href="{% url 'invitation_list' %}" class="uk-button uk-button-default uk-button-large">Manage Invitations</a>
+                    </div>
+                </div>
+            </div>
+            {% if is_superuser %}
+            <div>
+                <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
+                    <h3 class="uk-card-title uk-text-center">Settings</h3>
+                    <p class="uk-text-center">Configure server settings.</p>
+                    <div class="uk-flex uk-flex-center">
+                        <a href="{% url 'settings' %}" class="uk-button uk-button-default uk-button-large">View Settings</a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- System Status Section -->
+    <div class="uk-margin-large-top uk-margin-large-bottom">
+        <h2 class="uk-heading-line uk-text-center"><span>System Stats</span></h2>
+        <div class="uk-grid uk-grid-match uk-child-width-1-3@m" uk-grid>
+            {% if is_superuser %}
+            <div>
+                <div class="uk-card uk-card-default uk-card-body">
+                    <h3 class="uk-card-title">Jellyfin Server</h3>
+                    <p>Status: <strong>{{ server_status }}</strong></p>
+                    <p>Version: <strong>{{ server_version }}</strong></p>
+                </div>
+            </div>
+            <div>
+                <div class="uk-card uk-card-default uk-card-body">
+                    <h3 class="uk-card-title">User Statistics</h3>
+                    <p>Total Users: <strong>{{ total_users }}</strong></p>
+                    <p>Active Sessions: <strong>{{ active_sessions }}</strong></p>
+                </div>
+            </div>
+            {% endif %}
+            <div>
+                <div class="uk-card uk-card-default uk-card-body">
+                    <h3 class="uk-card-title">Media Statistics</h3>
+                    <p>Total Movies: <strong>{{ total_movies }}</strong></p>
+                    <p>Total TV Series: <strong>{{ total_series }}</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest Movie Section -->
+    <div class="uk-margin-large-top">
+        <h2 class="uk-heading-line uk-text-center"><span>Latest Movies</span></h2>
+        <div class="uk-grid uk-child-width-1-4@m uk-child-width-1-2@s uk-flex-center" uk-grid>
+            {% for movie in latest_movies %}
+            <div>
+                <a href="{% url 'movie_detail' movie.Id %}" class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded card-fixed-height">
+                    {% if movie.ImageTags.Primary %}
+                    <img src="{{ config.server_url }}Items/{{ movie.Id }}/Images/Primary?tag={{ movie.ImageTags.Primary }}&quality=90&maxWidth=300"
+                        alt="{{ movie.Name }}" class="uk-margin-small-bottom uk-width-1-1">
+                    {% else %}
+                    <img src="{% static 'images/no-image.png' %}" alt="No image available"
+                        class="uk-margin-small-bottom uk-width-1-1">
+                    {% endif %}
+                    <h3 class="uk-card-title uk-text-center">{{ movie.Name }}</h3>
+                    <p class="uk-text-center">{{ movie.ProductionYear }}</p>
+                </a>
+            </div>
+            {% empty %}
+            <p class="uk-text-center">No latest media available.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Latest Series Section -->
+    <div class="uk-margin-large-top">
+        <h2 class="uk-heading-line uk-text-center"><span>Latest Series</span></h2>
+        <div class="uk-grid uk-child-width-1-4@m uk-child-width-1-2@s uk-flex-center" uk-grid>
+            {% for series in latest_shows %}
+            <div>
+                <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded card-fixed-height">
+                    {% if series.ImageTags.Primary %}
+                    <img src="{{ config.server_url }}Items/{{ series.Id }}/Images/Primary?tag={{ series.ImageTags.Primary }}&quality=90&maxWidth=300"
+                        alt="{{ series.Name }}" class="uk-margin-small-bottom uk-width-1-1">
+                    {% else %}
+                    <img src="{% static 'images/no-image.png' %}" alt="No image available"
+                        class="uk-margin-small-bottom uk-width-1-1">
+                    {% endif %}
+                    <h3 class="uk-card-title uk-text-center">{{ series.Name }}</h3>
+                    <p class="uk-text-center">{{ series.ProductionYear }}</p>
+                </div>
+            </div>
+            {% empty %}
+            <p class="uk-text-center">No latest series available.</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    {% if is_superuser %}
+    <!-- Recent Activity Section -->
+    <div class="uk-margin-large-top">
+        <h2 class="uk-heading-line uk-text-center"><span>Recent Activity</span></h2>
+
+        <table class="uk-table uk-table-divider uk-table-hover uk-table-middle uk-table-small uk-table-responsive">
+            <thead>
+                <tr>
+                    <th class="uk-width-small">Action</th>
+                    <th class="uk-width-small">User</th>
+                    <th class="uk-width-medium">Message</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in recent_log_entries %}
+                <tr>
+                    <td>
+                        {% if entry.action == "LOGIN" %}
+                        <span class="uk-label uk-label-primary">
+                            <i class="fas fa-sign-in-alt" style="margin-right: 5px;"></i> Login
+                        </span>
+                        {% elif entry.action == "CREATED" %}
+                        <span class="uk-label uk-label-success">
+                            <i class="fas fa-plus-circle" style="margin-right: 5px;"></i> Created
+                        </span>
+                        {% elif entry.action == "DELETED" %}
+                        <span class="uk-label uk-label-danger">
+                            <i class="fas fa-trash" style="margin-right: 5px;"></i> Deleted
+                        </span>
+                        {% elif entry.action == "ERROR" %}
+                        <span class="uk-label uk-label-danger">
+                            <i class="fas fa-times-circle" style="margin-right: 5px;"></i> Error
+                        </span>
+                        {% elif entry.action == "INFO" %}
+                        <span class="uk-label uk-label-primary">
+                            <i class="fas fa-info-circle" style="margin-right: 5px;"></i> Info
+                        </span>
+                        {% elif entry.action == "WARNING" %}
+                        <span class="uk-label uk-label-warning">
+                            <i class="fas fa-exclamation-triangle" style="margin-right: 5px;"></i> Warning
+                        </span>
+                        {% elif entry.action == "SETUP" %}
+                        <span class="uk-label uk-label-warning">
+                            <i class="fas fa-clipboard-list" style="margin-right: 5px;"></i> Setup
+                        </span>
+                        {% else %}
+                        <span class="uk-label uk-label-default">
+                            <i class="fas fa-clipboard-list" style="margin-right: 5px;"></i> {{ entry.get_action_display }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>{{ entry.user }}</td>
+                    <td>{{ entry.message }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="uk-text-center">No recent activity.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

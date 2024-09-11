@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Invitation List{% endblock %}
+
+{% block content %}
+<div class="uk-container uk-margin-large-top">
+    <!-- Page Header -->
+    <div class="uk-flex uk-flex-between uk-flex-middle uk-margin-bottom">
+        <h1 class="uk-heading-medium">Invitation List</h1>
+        <a href="{% url 'invitation_create' %}" class="uk-button uk-button-primary uk-button-large uk-border-rounded"><span uk-icon="icon: plus-circle" style="margin-right: 10px;"></span> Create Invite</a>
+
+    </div>
+
+    <!-- Invitations Table -->
+    {% if invitations %}
+        <div class="uk-overflow-auto">
+            <table class="uk-table uk-table-divider uk-table-striped uk-table-hover uk-table-small uk-table-middle">
+                <thead>
+                    <tr>
+                        <th>Invite Code</th>
+                        <th>Max Users</th>
+                        <th>Used Count</th>
+                        <th>Expiry</th>
+                        <th>Created At</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invitation in invitations %}
+                        <tr>
+                            <td>{{ invitation.invite_code }}</td>
+                            <td>{{ invitation.max_users }}</td>
+                            <td>{{ invitation.used_count }}</td>
+                            <td>
+                                {% if invitation.expiry %}
+                                    {{ invitation.expiry|date:"F j, Y, g:i a" }}
+                                {% else %}
+                                    None
+                                {% endif %}
+                            </td>
+                            <td>{{ invitation.created_at|date:"F j, Y, g:i a" }}</td>
+                            <td>
+                                <form action="{% url 'invitation_delete' invitation.id %}" method="post" class="uk-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="uk-button uk-button-danger uk-button-small">
+                                        <span uk-icon="icon: trash"></span> Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="uk-alert-warning" uk-alert>
+            <a class="uk-alert-close" uk-close></a>
+            No invitations found.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

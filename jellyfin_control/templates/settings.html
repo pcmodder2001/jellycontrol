@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="uk-container uk-margin-large-top">
+    <!-- Main Heading -->
+    <h1 class="uk-heading-medium uk-text-center">Application Settings</h1>
+
+    <!-- Heading Line -->
+    <hr class="uk-divider-icon">
+
+    <!-- Settings Form -->
+    <div class="uk-grid uk-grid-medium uk-child-width-1-2@s">
+        <!-- Config Form -->
+        <div>
+            <h2 class="uk-heading-small">Configuration</h2>
+            <form method="post" action="{% url 'settings' %}" class="uk-form-stacked">
+                {% csrf_token %}
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="server_url">Server URL:</label>
+                    <div class="uk-form-controls">
+                        <small style="color: red;"><strong>YOU MUST HAVE A "/" AT THE END OF THE URL IN ORDER FOR THE IMAGES TO LOAD</strong></small>
+                        <input class="uk-input" id="server_url" name="server_url" type="text" value="{{ config.server_url }}" placeholder="Enter server URL">
+                    </div>
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="app_instance_id">App Instance ID:</label>
+                    <div class="uk-form-controls">
+                        <input class="uk-input" id="app_instance_id" name="app_instance_id" type="text" value="{{ config.app_instance_id }}" placeholder="Enter app instance ID" readonly>
+                    </div>
+                </div>
+                <div class="uk-margin">
+                    <small style="color: red;"><strong>Needed to register users with invite code</strong></small>
+                    <label class="uk-form-label" for="jellyfin_api_key">Jellyfin API Key:</label>
+                    <div class="uk-form-controls uk-flex">
+                        <!-- API Key Input -->
+                        <input class="uk-input" id="jellyfin_api_key" name="jellyfin_api_key" type="text" style="width: 60%;" value="{{ config.jellyfin_api_key }}" placeholder="Enter Jellyfin API Key" readonly>
+                        
+                        <!-- Generate Button -->
+                        <button type="button" id="generate-api-key-btn" class="uk-button uk-button-primary uk-margin-left">Generate</button>
+                    </div>
+                    <!-- Placeholder for showing the API key generation status -->
+                    <div id="api-key-status" class="uk-margin-small-top"></div>
+                </div>
+                <button class="uk-button uk-button-primary" type="submit">Save Configuration</button>
+            </form>
+        </div>
+
+        <!-- License Form -->
+        <div>
+            <h2 class="uk-heading-small">License</h2>
+            <form method="post" action="" class="uk-form-stacked">
+                {% csrf_token %}
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="key">License Key:</label>
+                    <div class="uk-form-controls">
+                        <input class="uk-input" id="key" name="key" type="text" value="{{ license.key }}" placeholder="Enter license key" required readonly>
+                    </div>
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label">
+                        <input class="uk-checkbox" name="validated" type="checkbox" {% if license.validated %}checked{% endif %} disabled> Validated
+                    </label>
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="expires_at">Expires At:</label>
+                    <div class="uk-form-controls">
+                        <input class="uk-input" id="expires_at" name="expires_at" type="datetime-local" value="{{ license.expires_at|date:'Y-m-d\TH:i' }}" readonly>
+                    </div>
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label">
+                        <input class="uk-checkbox" name="revoked" type="checkbox" {% if license.revoked %}checked{% endif %} disabled> Revoked
+                    </label>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for handling the API key generation request -->
+<script>
+document.getElementById('generate-api-key-btn').addEventListener('click', function() {
+    const csrfToken = '{{ csrf_token }}';
+    const apiKeyStatus = document.getElementById('api-key-status');
+    apiKeyStatus.textContent = 'Generating API key...';
+
+    fetch("{% url 'generate_api_key' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('jellyfin_api_key').value = data.message;
+            apiKeyStatus.textContent = 'API key generated successfully!';
+        } else {
+            apiKeyStatus.textContent = `Error: ${data.error}`;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        apiKeyStatus.textContent = 'An error occurred while generating the API key.';
+    });
+});
+</script>
+{% endblock %}

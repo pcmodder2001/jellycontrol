@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}View License{% endblock %}
+
+{% block content %}
+<div class="uk-container uk-margin-large-top">
+    <h1 class="uk-heading-small uk-margin-remove-bottom">License Key Details</h1>
+    
+    <div class="uk-card uk-card-default uk-card-body uk-margin-top">
+        <h2 class="uk-heading-divider">General Information</h2>
+        <div class="uk-grid-small uk-child-width-1-2@s" uk-grid>
+            <div>
+                <p class="uk-text-bold uk-margin-remove-bottom">License Key:</p>
+                <p>{{ license.key }}</p>
+            </div>
+            <div>
+                <p class="uk-text-bold uk-margin-remove-bottom">Validated:</p>
+                <p>{% if license.validated %} Yes {% else %} No {% endif %}</p>
+            </div>
+            <div>
+                <p class="uk-text-bold uk-margin-remove-bottom">Valid Until:</p>
+                <p>{% if license.expires_at %} {{ license.expires_at }} {% else %} Not specified {% endif %}</p>
+            </div>
+            <div>
+                <p class="uk-text-bold uk-margin-remove-bottom">Issued To:</p>
+                <p>{{ license.issued_to }}</p>
+            </div>
+
+        </div>
+    </div>
+    
+    <div class="uk-card uk-card-default uk-card-body uk-margin-top">
+        <h2 class="uk-heading-divider">Application Details</h2>
+        <div class="uk-grid-small uk-child-width-1-2@s" uk-grid>
+            <div>
+                <p class="uk-text-bold uk-margin-remove-bottom">Application Name:</p>
+                <p>{{ app_name }}</p>
+            </div>
+            <div>
+                <p class="uk-text-bold uk-margin-remove-bottom">Application Instance ID:</p>
+                <p>{{ app_instance_id }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="uk-card uk-card-default uk-card-body uk-margin-top">
+        <h2 class="uk-heading-divider">Functions</h2>
+        <ul class="uk-list uk-list-bullet">
+            {% for function in license.functions.all %}
+                <li><strong>{{ function.name }}:</strong> {% if function.enabled %} Enabled {% else %} Disabled {% endif %}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <div class="uk-margin-top">
+        <a class="uk-button uk-button-primary" href="{% url 'home' %}">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

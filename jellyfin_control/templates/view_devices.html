@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Devices{% endblock %}
+{% load custom_filters %}
+{% block content %}
+<div class="uk-container uk-margin-large-top">
+    <h1 class="uk-heading-medium uk-text-center">Devices</h1>
+
+    {% if devices %}
+    <div class="uk-grid-match uk-child-width-1-2@s uk-child-width-1-3@m uk-margin-top" uk-grid>
+        {% for device in devices %}
+        <div>
+            <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded">
+                <div class="uk-card-media-top">
+                    {% if device.IconUrl %}
+                    <img src="{{ device.IconUrl }}" alt="{{ device.Name }}" class="uk-width-1-1">
+                    {% else %}
+                    <div class="uk-flex uk-flex-center uk-flex-middle" style="height: 200px; background-color: #f0f0f0;">
+                        <span uk-icon="icon: desktop; ratio: 2" class="uk-text-muted"></span>
+                    </div>
+                    {% endif %}
+                </div>
+                <h3 class="uk-card-title">{{ device.CustomName|default:device.Name }}</h3>
+                <p><strong>App Name:</strong> {{ device.AppName }}</p>
+                <p><strong>Last Activity:</strong> {{ device.DateLastActivity|iso_to_local }}</p>
+                <p><strong>Last User:</strong> {{ device.LastUserName }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="uk-alert-warning" uk-alert>
+        <a class="uk-alert-close" uk-close></a>
+        No devices found.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

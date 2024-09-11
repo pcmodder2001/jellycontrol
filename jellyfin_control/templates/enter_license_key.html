@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="uk-container uk-margin-top">
+    <h1 class="uk-heading-medium uk-text-center">Enter License Key</h1>
+    {% if messages %}
+    <div class="uk-alert uk-alert-info" uk-alert>
+        <ul class="uk-list">
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    {% if license %}
+    <div class="uk-card uk-card-default uk-card-body uk-margin-top">
+        <h3 class="uk-card-title">Stored License Key Details</h3>
+        <p><strong>License Key:</strong> {{ license.key }}</p>
+        <p><strong>System ID:</strong> {{ config.app_instance_id }}</p>
+
+        {% if license.expires_at %}
+        <p><strong>Expires At:</strong> {{ license.expires_at }}</p>
+        {% else %}
+        <p><strong>Expires At:</strong> No expiry set</p>
+        {% endif %}
+
+        <form action="{% url 'revalidate_license' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="license_key" value="{{ license.key }}">
+            <button type="submit" class="uk-button uk-button-primary uk-margin-top">Re-validate License</button>
+        </form>
+    </div>
+    {% endif %}
+    
+    <div class="uk-card uk-card-default uk-card-body uk-margin-top">
+        
+        <form method="post" class="uk-form-stacked uk-margin-top">
+            {% csrf_token %}
+            <h3 class="uk-card-title">Update License Key</h3>
+            <h5 class="uk-card-title">System ID: {{ config.app_instance_id }}</h5>
+            <div class="uk-margin">
+                {{ form.key.label_tag }}
+                <div class="uk-form-controls">
+                    {{ form.key }}
+                    {% if form.key.errors %}
+                    <div class="uk-text-danger" uk-alert>
+                        <ul class="uk-list">
+                            {% for error in form.key.errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <button type="submit" class="uk-button uk-button-primary">Submit</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

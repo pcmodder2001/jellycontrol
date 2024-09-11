@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}Registration Success{% endblock %}
+
+{% block content %}
+<div class="uk-container uk-margin-top uk-text-center">
+    <h1 class="uk-heading-medium uk-margin-large-bottom">Registration Successful</h1>
+    <p class="uk-text-lead">Your account has been successfully registered!</p>
+
+    <div class="uk-margin-large-top">
+        <a href="{{ server_url }}" target="_blank" class="uk-button uk-button-primary uk-button-large">Go to Jellyfin</a>
+    </div>
+</div>
+{% endblock %}

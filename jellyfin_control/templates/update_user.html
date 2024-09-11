@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Update User{% endblock %}
+
+{% block content %}
+<div class="uk-container uk-margin-large-top">
+    <h1 class="uk-heading-medium uk-text-center">Update User</h1>
+
+    {% if error_message %}
+    <div class="uk-alert-danger uk-margin-bottom" uk-alert>
+        <a class="uk-alert-close" uk-close></a>
+        <p>{{ error_message }}</p>
+    </div>
+    {% endif %}
+
+    <div class="uk-card uk-card-default uk-card-body uk-box-shadow-large uk-border-rounded">
+        <form method="post" class="uk-form-stacked">
+            {% csrf_token %}
+
+            <!-- Basic User Information -->
+            <div class="uk-margin">
+                <h3 class="uk-card-title">Basic Information</h3>
+                <div class="uk-grid-small uk-child-width-1-1@s uk-child-width-1-2@m" uk-grid>
+                    <div>
+                        <label class="uk-form-label" for="name">Name:</label>
+                        <div class="uk-form-controls">
+                            <input class="uk-input uk-border-rounded" id="name" name="name" type="text" value="{{ user_data.Name }}">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="server_id">Server ID:</label>
+                        <div class="uk-form-controls">
+                            <input class="uk-input uk-border-rounded" id="server_id" name="server_id" type="text" value="{{ user_data.ServerId }}" readonly>
+                        </div>
+                        <small style="font-weight: bold;">Read Only field</small>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="server_name">Server Name:</label>
+                        <div class="uk-form-controls">
+                            <input class="uk-input uk-border-rounded" id="server_name" name="server_name" type="text" value="{{ user_data.ServerName }}">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="last_login_date">Last Login Date:</label>
+                        <div class="uk-form-controls">
+                            <input class="uk-input uk-border-rounded" id="last_login_date" name="last_login_date" type="datetime-local" value="{{ user_data.LastLoginDate }}">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="last_activity_date">Last Activity Date:</label>
+                        <div class="uk-form-controls">
+                            <input class="uk-input uk-border-rounded" id="last_activity_date" name="last_activity_date" type="datetime-local" value="{{ user_data.LastActivityDate }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Policy Fields -->
+            <div class="uk-margin">
+                <h3 class="uk-card-title">User Policies</h3>
+                <div class="uk-grid-small uk-child-width-1-1@s uk-child-width-1-2@m" uk-grid>
+                    <div>
+                        <label class="uk-form-label" for="is_administrator">Is Administrator:</label>
+                        <div class="uk-form-controls">
+                            <label class="uk-switch">
+                                <input class="uk-checkbox" id="is_administrator" name="is_administrator" type="checkbox" {% if user_data.Policy.IsAdministrator %}checked{% endif %}>
+                                <span class="uk-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="enable_collection_management">Enable Collection Management:</label>
+                        <div class="uk-form-controls">
+                            <label class="uk-switch">
+                                <input class="uk-checkbox" id="enable_collection_management" name="enable_collection_management" type="checkbox" {% if user_data.Policy.EnableCollectionManagement %}checked{% endif %}>
+                                <span class="uk-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="enable_subtitle_management">Enable Subtitle Management:</label>
+                        <div class="uk-form-controls">
+                            <label class="uk-switch">
+                                <input class="uk-checkbox" id="enable_subtitle_management" name="enable_subtitle_management" type="checkbox" {% if user_data.Policy.EnableSubtitleManagement %}checked{% endif %}>
+                                <span class="uk-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="enable_lyric_management">Enable Lyric Management:</label>
+                        <div class="uk-form-controls">
+                            <label class="uk-switch">
+                                <input class="uk-checkbox" id="enable_lyric_management" name="enable_lyric_management" type="checkbox" {% if user_data.Policy.EnableLyricManagement %}checked{% endif %}>
+                                <span class="uk-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="is_disabled">Is Disabled:</label>
+                        <div class="uk-form-controls">
+                            <label class="uk-switch">
+                                <input class="uk-checkbox" id="is_disabled" name="is_disabled" type="checkbox" {% if user_data.Policy.IsDisabled %}checked{% endif %}>
+                                <span class="uk-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="enable_user_preference_access">Enable User Preference Access:</label>
+                        <div class="uk-form-controls">
+                            <label class="uk-switch">
+                                <input class="uk-checkbox" id="enable_user_preference_access" name="enable_user_preference_access" type="checkbox" {% if user_data.Policy.EnableUserPreferenceAccess %}checked{% endif %}>
+                                <span class="uk-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="enable_remote_control_of_other_users">Enable Remote Control of Other Users:</label>
+                        <div class="uk-form-controls">
+                            <label class="uk-switch">
+                                <input class="uk-checkbox" id="enable_remote_control_of_other_users" name="enable_remote_control_of_other_users" type="checkbox" {% if user_data.Policy.EnableRemoteControlOfOtherUsers %}checked{% endif %}>
+                                <span class="uk-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="enable_shared_device_control">Enable Shared Device Control:</label>
+                        <div class="uk-form-controls">
+                            <label class="uk-switch">
+                                <input class="uk-checkbox" id="enable_shared_device_control" name="enable_shared_device_control" type="checkbox" {% if user_data.Policy.EnableSharedDeviceControl %}checked{% endif %}>
+                                <span class="uk-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="enable_remote_access">Enable Remote Access:</label>
+                        <div class="uk-form-controls">
+                            <label class="uk-switch">
+                                <input class="uk-checkbox" id="enable_remote_access" name="enable_remote_access" type="checkbox" {% if user_data.Policy.EnableRemoteAccess %}checked{% endif %}>
+                                <span class="uk-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="enable_playback_remuxing">Enable Playback Remuxing:</label>
+                        <div class="uk-form-controls">
+                            <label class="uk-switch">
+                                <input class="uk-checkbox" id="enable_playback_remuxing" name="enable_playback_remuxing" type="checkbox" {% if user_data.Policy.EnablePlaybackRemuxing %}checked{% endif %}>
+                                <span class="uk-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="uk-form-label" for="force_remote_source_transcoding">Force Remote Source Transcoding:</label>
+                        <div class="uk-form-controls">
+                            <label class="uk-switch">
+                                <input class="uk-checkbox" id="force_remote_source_transcoding" name="force_remote_source_transcoding" type="checkbox" {% if user_data.Policy.ForceRemoteSourceTranscoding %}checked{% endif %}>
+                                <span class="uk-switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden Fields for Additional Policy Data -->
+            <input type="hidden" name="password_reset_provider_id" value="{{ user_data.Policy.PasswordResetProviderId }}">
+            <input type="hidden" name="authentication_provider_id" value="{{ user_data.Policy.AuthenticationProviderId }}">
+
+            <!-- Submit Button -->
+            <div class="uk-margin">
+                <button class="uk-button uk-button-primary uk-width-1-1 uk-border-rounded" type="submit">Update User</button>
+            </div>
+        </form>
+        
+    </div>
+</div>
+{% endblock %}

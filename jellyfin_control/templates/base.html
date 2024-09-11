@@ -1,0 +1,450 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{% static 'assets/custom_logo.png' %}" type="image/x-icon">
+
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.6.22/css/uikit.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.6.22/dist/css/uikit-icons.min.css" />
+    <!-- Add SweetAlert2 CSS and JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <style>
+        /* Light and Dark Mode Variables */
+        :root {
+            --background-color: #ffffff;
+            --text-color: #000000;
+            --sidebar-background: #f0f0f0;
+            --sidebar-text-color: #000000;
+            --sidebar-icon-color: #000000;
+            --toggle-btn-background: #333333;
+            --toggle-btn-text-color: #ffffff;
+            --theme-slider-background: #007bff;
+            --theme-slider-icon-color: #ffffff;
+            --input-background-color: #ffffff;
+            --input-text-color: #000000;
+            --input-border-color: #cccccc;
+            --input-focus-border-color: #007bff;
+            --uk-container-color: #ffffff;
+        }
+
+        [data-theme='dark'] {
+            --background-color: #121212;
+            --text-color: #ffffff;
+            --sidebar-background: #1e1e1e;
+            --sidebar-text-color: #ffffff;
+            --sidebar-icon-color: #ffffff;
+            --toggle-btn-background: #444444;
+            --toggle-btn-text-color: #ffffff;
+            --theme-slider-background: #28a745;
+            --theme-slider-icon-color: #ffffff;
+            --input-background-color: #333333;
+            --input-text-color: #ffffff;
+            --input-border-color: #555555;
+            --input-focus-border-color: #28a745;
+            --uk-container-color: #333333;
+        }
+
+        /* Base styles */
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .sidebar {
+            width: 200px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            background-color: var(--sidebar-background);
+            transition: width 0.3s;
+            display: flex;
+            flex-direction: column;
+            font-weight: bold;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar.collapsed {
+            width: 60px;
+        }
+
+        .sidebar .logo {
+            display: block;
+            height: auto;
+            margin: 20px auto;
+        }
+
+        .sidebar .uk-nav {
+            flex: 1;
+            width: 100%;
+            margin: 0;
+        }
+
+        .sidebar .uk-nav>li>a {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            transition: padding 0.3s;
+            white-space: nowrap;
+            color: var(--sidebar-text-color);
+        }
+
+        .sidebar.collapsed .uk-nav>li>a {
+            padding: 20px;
+            justify-content: center;
+        }
+
+        .sidebar .uk-nav>li>a span.text {
+            margin-left: 15px;
+            transition: opacity 0.3s;
+        }
+
+        .sidebar.collapsed .uk-nav>li>a span.text {
+            opacity: 0;
+            width: 0;
+            margin-left: 0;
+            overflow: hidden;
+        }
+
+        .toggle-btn {
+            position: absolute;
+            top: 9%;
+            right: -20px;
+            background-color: var(--toggle-btn-background);
+            color: var(--toggle-btn-text-color);
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 0 5px 5px 0;
+            transition: right 0.3s;
+            z-index: 1000;
+        }
+
+        .content {
+            margin-left: 200px;
+            transition: margin-left 0.3s;
+            padding: 20px;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .content.collapsed {
+            margin-left: 60px;
+        }
+
+        .theme-slider {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            background-color: var(--theme-slider-background);
+            color: var(--theme-slider-icon-color);
+            padding: 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .theme-slider i {
+            font-size: 20px;
+        }
+
+        .theme-slider span {
+            margin-left: 10px;
+        }
+
+        .theme-slider:hover {
+            background-color: var(--theme-slider-background);
+            opacity: 0.8;
+        }
+
+        .theme-slider .light-mode {
+            display: none;
+        }
+
+        [data-theme='dark'] .theme-slider .dark-mode {
+            display: none;
+        }
+
+        [data-theme='light'] .theme-slider .light-mode {
+            display: block;
+        }
+
+        .uk-switch {
+            position: relative;
+            display: inline-block;
+            height: 34px;
+            width: 60px;
+        }
+
+        /* Hide default HTML checkbox */
+        .uk-switch input {
+            display: none;
+        }
+
+        /* Slider */
+        .uk-switch-slider {
+            background-color: rgba(0, 0, 0, 0.22);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            border-radius: 500px;
+            bottom: 0;
+            cursor: pointer;
+            transition-property: background-color;
+            transition-duration: .2s;
+            box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.07);
+        }
+
+        /* Switch pointer */
+        .uk-switch-slider:before {
+            content: '';
+            background-color: #fff;
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            left: 2px;
+            bottom: 2px;
+            border-radius: 50%;
+            transition-property: transform, box-shadow;
+            transition-duration: .2s;
+        }
+
+        /* Slider active color */
+        input:checked+.uk-switch-slider {
+            background-color: #39f !important;
+        }
+
+        /* Pointer active animation */
+        input:checked+.uk-switch-slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Modifiers */
+        .uk-switch-slider.uk-switch-on-off {
+            background-color: #f0506e;
+        }
+
+        input:checked+.uk-switch-slider.uk-switch-on-off {
+            background-color: #32d296 !important;
+        }
+
+        /* Style Modifier */
+        .uk-switch-slider.uk-switch-big:before {
+            transform: scale(1.2);
+            box-shadow: 0 0 6px rgba(0, 0, 0, 0.22);
+        }
+
+        .uk-switch-slider.uk-switch-small:before {
+            box-shadow: 0 0 6px rgba(0, 0, 0, 0.22);
+        }
+
+        input:checked+.uk-switch-slider.uk-switch-big:before {
+            transform: translateX(26px) scale(1.2);
+        }
+
+        /* Inverse Modifier - affects only default */
+        .uk-light .uk-switch-slider:not(.uk-switch-on-off) {
+            background-color: rgba(255, 255, 255, 0.22);
+        }
+
+        /* Input and textarea styles */
+        input[type="text"],
+        input[type="password"],
+        input[type="email"],
+        input[type="number"],
+        textarea,
+        select {
+            background-color: var(--input-background-color);
+            color: var(--input-text-color);
+            border: 1px solid var(--input-border-color);
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        input[type="email"]:focus,
+        input[type="number"]:focus,
+        textarea:focus,
+        select:focus {
+            border-color: var(--input-focus-border-color);
+            outline: none;
+        }
+
+        /* Optional: Add styles for disabled inputs */
+        input[disabled],
+        textarea[disabled],
+        select[disabled] {
+            background-color: #f5f5f5;
+            color: #888888;
+            border-color: #cccccc;
+        }
+
+        /* Add placeholder color */
+        ::placeholder {
+            color: var(--text-color);
+        }
+
+        [data-theme='dark'] ::placeholder {
+            color: #aaaaaa;
+        }
+
+        /* Custom hover color for table rows */
+        /* Change the row background color and text color on hover */
+        .uk-table-hover tbody tr:hover {
+            background-color: #3a3a3a;
+            color: white;
+        }
+
+        /* Change the edit button color on row hover */
+        .uk-table-hover tbody tr:hover .edit-button {
+            background-color: #ffffff;
+            /* Change the background color */
+            color: #3a3a3a;
+            /* Change the text color */
+            border-color: #ffffff;
+            /* Change the border color */
+        }
+
+        /* Change the icon color on row hover */
+        .uk-table-hover tbody tr:hover .edit-button span[uk-icon] {
+            color: #3a3a3a;
+            /* Change the icon color */
+        }
+
+        .card-fixed-height {
+            height: auto;
+            /* Adjust height as needed */
+            overflow: hidden;
+            /* Ensures content does not overflow */
+        }
+
+        .card-fixed-height img {
+            max-height: 250px;
+            /* Limit image height */
+            object-fit: fill;
+            /* Ensures image covers the area without stretching */
+        }
+
+        .card-fixed-height .uk-card-body {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            /* Distributes content evenly */
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="sidebar collapsed" id="sidebar">
+        <header>
+            <a href="/home">
+                <img src="{% static 'assets/custom_logo.png' %}" alt="Site Logo" class="logo">
+            </a>
+        </header>
+        <span class="toggle-btn" id="toggle-btn">☰</span>
+        <ul class="uk-nav uk-nav-default">
+            {% if user.is_authenticated %}
+            
+            {% if is_superuser %}
+            <li><a href="{% url 'view_users' %}"><span uk-icon="icon: users"></span> <span class="text">Users</span></a></li>
+            {% endif %}
+
+            <li><a href="{% url 'invitation_list' %}"><span uk-icon="icon: social"></span> <span class="text">Invites</span></a></li>
+
+            {% if is_superuser %}
+            <li><a href="{% url 'settings' %}"><span uk-icon="icon: settings"></span> <span class="text">Settings</span></a></li>
+            {% endif %}
+
+            <li><a href="{% url 'movie_list' %}"><span uk-icon="icon: video-camera"></span> <span class="text">Movies</span></a></li>
+
+            {% if is_superuser %}
+            <li><a href="{% url 'view_devices' %}"><span uk-icon="icon: desktop"></span><span class="text">Devices</span></a></li>
+            <li><a href="{% url 'sessions_page' %}"><span uk-icon="icon: tv"></span><span class="text">Sessions</span></a></li>
+            <li><a href="{% url 'logs' %}"><span uk-icon="icon: file-text"></span> <span class="text">Logs</span></a></li>
+            {% endif %}
+
+            <li><a href="{% url 'logout' %}"><span uk-icon="icon: sign-out"></span> <span class="text">Logout</span></a></li>
+            {% else %}
+
+            <li><a href="{% url 'login' %}"><span uk-icon="icon: sign-in"></span> <span class="text">Login</span></a></li>
+            <li><a href="{% url 'enter_invite' %}"><span uk-icon="icon: plus-circle"></span> <span class="text">Sign Up</span></a></li>
+            {% endif %}
+        </ul>
+
+    </div>
+
+    <div class="content" id="content">
+        <div class="uk-container uk-margin-top">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+
+    <!-- Add SweetAlert JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.6.22/js/uikit.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.6.22/js/uikit-icons.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
+    <script>
+        document.getElementById('toggle-btn').onclick = function () {
+            var sidebar = document.getElementById('sidebar');
+            var content = document.getElementById('content');
+            sidebar.classList.toggle('collapsed');
+            content.classList.toggle('collapsed');
+        };
+
+        document.getElementById('theme-slider').addEventListener('click', function () {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+
+        // Display SweetAlert messages if any
+
+    </script>
+    <script>
+        {% for message in messages %}
+        let iconType = 'info'; // Default icon type
+        if ('{{ message.tags }}' === 'error') {
+            iconType = 'error';
+        } else if ('{{ message.tags }}' === 'success') {
+            iconType = 'success';
+        }
+
+        Swal.fire({
+            text: '{{ message|escapejs }}',
+            icon: iconType,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 5000,
+            timerProgressBar: true
+        });
+        {% endfor %}
+    </script>
+</body>
+
+</html>

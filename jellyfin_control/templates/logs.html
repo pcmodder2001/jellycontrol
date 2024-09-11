@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Log Entries{% endblock %}
+
+{% block content %}
+<div class="uk-container uk-margin-large-top">
+    <h1 class="uk-heading-line uk-text-center" style="padding-bottom: 5px;"><span>Log Entries</span></h1>
+
+    <!-- Search Input -->
+    <div class="uk-margin uk-flex uk-flex-center">
+        <input class="uk-input uk-width-1-3" id="log-search" type="text" placeholder="Search logs...">
+    </div>
+
+    <table class="uk-table uk-table-divider uk-table-hover uk-table-middle uk-table-small uk-table-responsive" id="log-table">
+        <thead>
+            <tr>
+                <th class="uk-width-small">Action</th>
+                <th class="uk-width-small">User</th>
+                <th class="uk-width-medium">Message</th>
+                <th class="uk-width-small">Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in page_obj %}
+            <tr>
+                <td>
+                    {% if log.action == "LOGIN" %}
+                        <span class="uk-label uk-label-primary">
+                            <i class="fas fa-sign-in-alt" style="margin-right: 5px;"></i> Login
+                        </span>
+                    {% elif log.action == "CREATED" %}
+                        <span class="uk-label uk-label-success">
+                            <i class="fas fa-plus-circle" style="margin-right: 5px;"></i> Created
+                        </span>
+                    {% elif log.action == "SETUP" %}
+                    <span class="uk-label uk-label-warning">
+                        <i class="fas fa-clipboard-list" style="margin-right: 5px;"></i> Setup
+                    </span>
+                    {% elif log.action == "DELETED" %}
+                        <span class="uk-label uk-label-danger">
+                            <i class="fas fa-trash" style="margin-right: 5px;"></i> Deleted
+                        </span>
+                    {% elif log.action == "ERROR" %}
+                        <span class="uk-label uk-label-danger">
+                            <i class="fas fa-times-circle" style="margin-right: 5px;"></i> Error
+                        </span>
+                    {% elif log.action == "INFO" %}
+                        <span class="uk-label uk-label-primary">
+                            <i class="fas fa-info-circle" style="margin-right: 5px;"></i> Info
+                        </span>
+                    {% elif log.action == "WARNING" %}
+                        <span class="uk-label uk-label-warning">
+                            <i class="fas fa-exclamation-triangle" style="margin-right: 5px;"></i> Warning
+                        </span>
+                    {% else %}
+                        <span class="uk-label uk-label-default">
+                            <i class="fas fa-clipboard-list" style="margin-right: 5px;"></i> {{ log.get_action_display }}
+                        </span>
+                    {% endif %}
+                </td>
+                
+                <td>{{ log.user }}</td>
+                <td>{{ log.message }}</td>
+                <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="uk-text-center">No log entries found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination Controls -->
+    <div class="uk-margin-top uk-text-center">
+        <ul class="uk-pagination uk-flex-center" uk-margin>
+            {% if page_obj.has_previous %}
+                <li><a href="?page=1">First</a></li>
+                <li><a href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+            {% else %}
+                <li class="uk-disabled"><span>First</span></li>
+                <li class="uk-disabled"><span>Previous</span></li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="uk-active"><span>{{ num }}</span></li>
+                {% else %}
+                    <li><a href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+                <li><a href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                <li><a href="?page={{ page_obj.paginator.num_pages }}">Last</a></li>
+            {% else %}
+                <li class="uk-disabled"><span>Next</span></li>
+                <li class="uk-disabled"><span>Last</span></li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+
+<!-- JavaScript for Live Search -->
+<script>
+    document.getElementById('log-search').addEventListener('input', function() {
+        let filter = this.value.toLowerCase();
+        let rows = document.querySelectorAll('#log-table tbody tr');
+
+        rows.forEach(function(row) {
+            let action = row.cells[0].innerText.toLowerCase();
+            let user = row.cells[1].innerText.toLowerCase();
+            let message = row.cells[2].innerText.toLowerCase();
+            let timestamp = row.cells[3].innerText.toLowerCase();
+
+            if (action.includes(filter) || user.includes(filter) || message.includes(filter) || timestamp.includes(filter)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

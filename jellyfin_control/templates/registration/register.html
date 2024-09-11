@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="uk-container uk-margin-top">
+    <div class="uk-card uk-card-default uk-card-body uk-width-1-2@m uk-align-center">
+        <h1 class="uk-card-title uk-text-center">Register</h1>
+        {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        <form method="post" class="uk-form-stacked">
+            {% csrf_token %}
+
+            <input type="hidden" name="invite_code" value="{{ invite_code }}">
+
+            <div class="uk-margin">
+                <label class="uk-form-label" for="username">Username:</label>
+                <div class="uk-form-controls">
+                    <input class="uk-input" id="username" name="username" type="text" required autofocus>
+                </div>
+            </div>
+            <div class="uk-margin">
+                <label class="uk-form-label" for="email">Email:</label>
+                <div class="uk-form-controls">
+                    <input class="uk-input" id="email" name="email" type="email" required>
+                </div>
+            </div>
+            <div class="uk-margin">
+                <label class="uk-form-label" for="password">Password:</label>
+                <div class="uk-form-controls">
+                    <input class="uk-input" id="password" name="password" type="password" required>
+                </div>
+            </div>
+
+            <div class="uk-margin">
+                <label class="uk-form-label" for="password2">Re-enter Password:</label>
+                <div class="uk-form-controls">
+                    <input class="uk-input" id="password2" name="password2" type="password" required>
+                </div>
+            </div>
+
+            <div class="uk-margin uk-text-center">
+                <button class="uk-button uk-button-primary" type="submit">Register</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
