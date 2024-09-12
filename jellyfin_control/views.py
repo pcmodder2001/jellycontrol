@@ -698,15 +698,12 @@ def create_user(request):
         'Content-Type': 'application/json',
     }
 
-    if request.method == 'GET':
-        return render(request, 'create_user.html')
-
-    elif request.method == 'POST':
+    if request.method == 'POST':
         try:
-            # Check user limit based on function settings
+            # Check user limit based on function settings (optional)
             # if is_user_limit_exceeded():
             #     messages.error(request, 'User creation failed. Maximum user limit reached.')
-            #     return redirect('create_user')  # Replace with your create user URL
+            #     return redirect('view_users')  # Redirect to user management page
 
             # Construct the new user data based on the form input values
             new_user_data = {
@@ -728,7 +725,7 @@ def create_user(request):
                 )
                 token = access_token
                 sync_users(server_url, token)
-                return redirect('view_users')  # Redirect to view users page or success page
+                return redirect('view_users')  # Redirect to user management page
             else:
                 # Handle failed creation
                 messages.error(request, f"Failed to create user: {response.status_code} - {response.text}")
@@ -737,7 +734,7 @@ def create_user(request):
                     user=request.user,
                     message=f"Failed to create user '{new_user_data['Name']}': {response.status_code} - {response.text}"
                 )
-                return render(request, 'create_user.html', status=response.status_code)
+                return redirect('view_users')  # Redirect back to user management with an error message
 
         except requests.RequestException as e:
             # Handle connection errors
@@ -748,7 +745,7 @@ def create_user(request):
                 user=request.user,
                 message=error_message
             )
-            return render(request, 'create_user.html')
+            return redirect('view_users')  # Redirect back to user management with an error message
 
     return HttpResponseBadRequest("Invalid request method")
 
