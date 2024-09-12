@@ -6,7 +6,7 @@
 <div class="uk-container uk-margin-large-top uk-margin-large-bottom">
     <!-- Welcome Card -->
     <div class="uk-card uk-box-shadow-medium">
-        <h1 class="uk-heading-medium uk-text-center">Welcome to Your Dashboard</h1>
+        <h1 class="uk-heading-medium uk-text-center">Welcome {{ username }}</h1>
         <p class="uk-text-center uk-text-lead">
             {% if is_superuser %}
                 Manage your Jellyfin users, invitations, and settings here.
