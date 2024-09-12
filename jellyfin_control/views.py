@@ -109,7 +109,6 @@ def setup(request):
 
         # Step 4: Generate and Retrieve API Key
         elif step == '4':
-            print("-------------------------- STEP 4 --------------------------")
             server_url = request.session.get('server_url')
             token = request.session.get('token')
 
@@ -266,7 +265,6 @@ def sync_users(server_url, token):
                 db_user.is_superuser = is_admin  # Set superuser status based on admin flag
                 db_user.is_staff = is_admin  # Usually, a superuser is also staff
                 db_user.save()
-                print(f"Created new user: {db_user.email} (Superuser: {db_user.is_superuser})")
             else:
                 # If the user already exists, update their email and admin status
                 db_user.email = email
@@ -274,7 +272,6 @@ def sync_users(server_url, token):
                     db_user.is_superuser = is_admin
                     db_user.is_staff = is_admin  # Usually, a superuser is also staff
                     db_user.save()
-                print(f"Updated existing user: {db_user.email} (Superuser: {db_user.is_superuser})")
     else:
         raise Exception(f"Failed to retrieve users: {response.status_code} - {response.text}")
 
@@ -319,9 +316,7 @@ def check_and_update_superuser(request, email, access_token):
     headers = {
         "X-Emby-Token": access_token
     }
-    print(user_policy_url)
     response = requests.post(user_policy_url, headers=headers)
-    print(response)
     if response.status_code == 200:
         policy_data = response.json()
         is_admin = policy_data.get('IsAdministrator', False)
@@ -342,7 +337,8 @@ def custom_login(request):
     config = Config.objects.first()
     if not config:
         return redirect("setup")
-
+    if request.user.is_authenticated:
+        return redirect("home")
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
@@ -930,7 +926,6 @@ def enter_invite(request):
         return redirect("setup")
     if request.method == 'POST':
         invite_code = request.POST.get('invite_code')
-        print('invite code: ', invite_code)
         return redirect(f'/register/{invite_code}')
     return render(request, 'enter_invite.html')
 
