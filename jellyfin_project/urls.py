@@ -23,7 +23,6 @@ from django.contrib.auth import views as auth_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('setup/', views.setup, name='setup'),
-    path('setup/success/', views.setup_success, name='setup_success'),
     path('', views.custom_login, name='login'),
     path('logout/', views.custom_logout, name='logout'),  # Add this line for logout
     path('home/', views.home, name='home'),

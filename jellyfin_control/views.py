@@ -17,23 +17,6 @@ import json
 from django.views.decorators.http import require_POST
 from .decorators import superuser_required
 
-def is_user_limit_exceeded():
-    # Check if there is a function named "unlimited users" enabled
-    unlimited_users_function = Function.objects.filter(name='unlimited users', enabled=True).exists()
-
-    # Check if there is a function named "user limit" and get its value
-    user_limit_function = Function.objects.filter(name='user limit', enabled=True).first()
-
-    if unlimited_users_function:
-        return False  # Unlimited users function found and enabled
-    elif user_limit_function:
-        # Example logic to check user limit based on the user limit function value
-        user_limit_value = int(user_limit_function.value)  # Assuming value is stored as an integer
-        active_user_count = 100  # Replace with actual logic to count active users
-        return active_user_count >= user_limit_value
-    else:
-        return False  # Default to False if no user limit function found
-
 
 def log_action(action, message, user=None):
     """Log an action using the LogEntry model."""
@@ -274,11 +257,6 @@ def sync_users(server_url, token):
                     db_user.save()
     else:
         raise Exception(f"Failed to retrieve users: {response.status_code} - {response.text}")
-
-def setup_success(request):
-    return render(request, 'control/success.html')
-
-
 
 def authenticate_with_jellyfin(email, password, ):
     config = Config.objects.first()

@@ -20,7 +20,7 @@
             {% if is_superuser %}
             <div>
                 <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
-                    <h3 class="uk-card-title uk-text-center">Users</h3>
+                    <h3 class="uk-card-title uk-text-center"> <span uk-icon="icon: users"></span> <span class="text">Users</span></h3>
                     <p class="uk-text-center">View and manage user accounts.</p>
                     <div class="uk-flex uk-flex-center">
                         <a href="{% url 'view_users' %}" class="uk-button uk-button-default uk-button-large">Manage Users</a>
@@ -30,7 +30,7 @@
             {% endif %}
             <div>
                 <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
-                    <h3 class="uk-card-title uk-text-center">Invitations</h3>
+                    <h3 class="uk-card-title uk-text-center"> <span uk-icon="icon: social"></span> <span class="text">Invitations</span></h3>
                     <p class="uk-text-center">Create and manage invite codes.</p>
                     <div class="uk-flex uk-flex-center">
                         <a href="{% url 'invitation_list' %}" class="uk-button uk-button-default uk-button-large">Manage Invitations</a>
@@ -40,7 +40,7 @@
             {% if is_superuser %}
             <div>
                 <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
-                    <h3 class="uk-card-title uk-text-center">Settings</h3>
+                    <h3 class="uk-card-title uk-text-center"> <span uk-icon="icon: settings"></span> <span class="text">Settings</span></h3>
                     <p class="uk-text-center">Configure server settings.</p>
                     <div class="uk-flex uk-flex-center">
                         <a href="{% url 'settings' %}" class="uk-button uk-button-default uk-button-large">View Settings</a>
