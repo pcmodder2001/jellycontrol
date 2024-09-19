@@ -1426,3 +1426,85 @@ def sessions_page(request):
         sessions = []
 
     return render(request, 'sessions_page.html', {'sessions': sessions})
+
+
+
+
+
+
+@login_required
+def series_list(request):
+    access_token = request.session.get('jellyfin_access_token')
+    if not access_token:
+        return redirect('login')  # Redirect to your login view if no access token is found
+    
+    try:
+        config = Config.objects.first()
+        server_url = config.server_url
+    except Config.DoesNotExist:
+        return render(request, 'error.html', {'error': 'Server configuration not found.'})
+    
+    movies_url = f"{server_url}/Items"
+
+    headers = {
+        'X-Emby-Token': access_token,
+        'Content-Type': 'application/json',
+    }
+
+    params = {
+        'IncludeItemTypes': 'Series',
+        'Recursive': True,
+        'Fields': 'PrimaryImageAspectRatio,ImageTags',
+        'StartIndex': 0,
+        'Limit': 1000,  # Large limit to fetch all movies
+    }
+
+    try:
+        response = requests.get(movies_url, headers=headers, params=params)
+        response.raise_for_status()
+        movies_data = response.json().get('Items', [])
+    except requests.exceptions.RequestException as e:
+        return render(request, 'error.html', {'error': str(e)})
+
+    paginator = Paginator(movies_data, 50)  # Paginate with 100 movies per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'tv-shows.html', {
+        'page_obj': page_obj,
+        'config': config,
+        'all_movies': json.dumps(movies_data),  # Convert to JSON string
+    })
+
+
+@login_required
+def series_detail(request, movie_id):
+    config = Config.objects.first()
+    if not config:
+        messages.error(request, "Configuration error: No Jellyfin server URL configured.")
+        return redirect('home')  # Redirect to home or other suitable page
+
+    server_url = config.server_url
+    access_token = request.session.get('jellyfin_access_token')
+    headers = {
+        'X-Emby-Token': access_token,
+        'Content-Type': 'application/json',
+    }
+    
+    movie_url = f'{server_url}/Items/{movie_id}'
+    season_url = f'{server_url}/Shows/{movie_id}/Seasons'
+    try:
+        # Fetch movie data
+        response = requests.get(movie_url, headers=headers)
+        response.raise_for_status()
+        movie_data = response.json()
+
+        # Fetch season data
+        response = requests.get(season_url, headers=headers)
+        response.raise_for_status()
+        season_data = response.json().get('Items', [])  # Assuming season data is under 'Items'
+    except requests.RequestException as e:
+        messages.error(request, f"Error fetching movie details: {str(e)}")
+        return redirect('home')
+
+    return render(request, 'series_detail.html', {'movie': movie_data, 'season_data': season_data, 'config': config})

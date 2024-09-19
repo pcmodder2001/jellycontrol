@@ -111,7 +111,7 @@
         <div class="uk-grid uk-child-width-1-4@m uk-child-width-1-2@s uk-flex-center" uk-grid>
             {% for series in latest_shows %}
             <div>
-                <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded card-fixed-height">
+                <a href="{% url 'series-detail' series.Id %}" class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded card-fixed-height">
                     {% if series.ImageTags.Primary %}
                     <img src="{{ config.server_url }}Items/{{ series.Id }}/Images/Primary?tag={{ series.ImageTags.Primary }}&quality=90&maxWidth=300"
                         alt="{{ series.Name }}" class="uk-margin-small-bottom uk-width-1-1">
@@ -121,7 +121,7 @@
                     {% endif %}
                     <h3 class="uk-card-title uk-text-center">{{ series.Name }}</h3>
                     <p class="uk-text-center">{{ series.ProductionYear }}</p>
-                </div>
+                </a>
             </div>
             {% empty %}
             <p class="uk-text-center">No latest series available.</p>

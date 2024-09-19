@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Movies{% endblock %}
+
+{% block content %}
+<div class="uk-container uk-margin-large-top uk-margin-large-bottom">
+    <h1 class="uk-heading-line uk-text-center"><span>All Movies</span></h1>
+    
+    <div class="uk-margin-bottom">
+        <input type="text" id="searchInput" class="uk-input" placeholder="Search movies...">
+    </div>
+    
+    <div class="uk-grid uk-child-width-1-4@m uk-child-width-1-2@s uk-flex-center" uk-grid id="movieContainer">
+        {% for movie in page_obj %}
+        <div class="movie-card">
+            <a href="{% url 'series-detail' movie.Id %}">
+                <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded card-fixed-height">
+                    {% if movie.ImageTags.Primary %}
+                        <img src="{{ config.server_url }}Items/{{ movie.Id }}/Images/Primary?tag={{ movie.ImageTags.Primary }}&quality=90&maxWidth=300" 
+                             alt="{{ movie.Name }}" class="uk-margin-small-bottom uk-width-1-1">
+                    {% else %}
+                        <img src="{% static 'images/no-image.png' %}" alt="No image available" class="uk-margin-small-bottom uk-width-1-1">
+                    {% endif %}
+                    <h3 class="uk-card-title uk-text-center">{{ movie.Name }}</h3>
+                    <p class="uk-text-center">{{ movie.ProductionYear }}</p>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <p class="uk-text-center">No movies available.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    <div class="uk-flex uk-flex-center uk-margin-large-top">
+        <ul class="uk-pagination uk-flex-center" uk-margin>
+            {% if page_obj.has_previous %}
+                <li>
+                    <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+            {% else %}
+                <li class="uk-disabled">
+                    <span>Previous</span>
+                </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="uk-active"><span>{{ num }}</span></li>
+                {% else %}
+                    <li><a href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li>
+                    <a href="?page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+            {% else %}
+                <li class="uk-disabled">
+                    <span>Next</span>
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var searchInput = document.getElementById('searchInput');
+        var movieContainer = document.getElementById('movieContainer');
+
+        var allMovies = JSON.parse('{{ all_movies|escapejs }}');
+        var serverUrl = "{{ config.server_url|escapejs }}";
+
+        searchInput.addEventListener('keyup', function() {
+            var filter = searchInput.value.toLowerCase();
+            var filteredMovies = allMovies.filter(function(movie) {
+                return movie.Name.toLowerCase().includes(filter);
+            });
+
+            movieContainer.innerHTML = '';
+
+            filteredMovies.forEach(function(movie) {
+                var cardHTML = `
+                    <div class="movie-card">
+                        <a href="${window.location.origin}/movies/${movie.Id}/">
+                            <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded card-fixed-height">
+                                ${movie.ImageTags.Primary ? 
+                                    `<img src="${serverUrl}Items/${movie.Id}/Images/Primary?tag=${movie.ImageTags.Primary}&quality=90&maxWidth=300" 
+                                         alt="${movie.Name}" class="uk-margin-small-bottom uk-width-1-1">` 
+                                    : 
+                                    `<img src="{% static 'images/no-image.png' %}" alt="No image available" class="uk-margin-small-bottom uk-width-1-1">`
+                                }
+                                <h3 class="uk-card-title uk-text-center">${movie.Name}</h3>
+                                <p class="uk-text-center">${movie.ProductionYear}</p>
+                            </div>
+                        </a>
+                    </div>
+                `;
+                movieContainer.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        });
+    });
+</script>
+
+{% endblock %}

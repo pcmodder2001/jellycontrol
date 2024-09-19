@@ -48,5 +48,6 @@ urlpatterns = [
     path('devices/', views.view_devices, name='view_devices'),
     path('sessions/', views.sessions_page, name='sessions_page'),
     path('generate-api-key/', views.generate_api_key_view, name='generate_api_key'),
-
+    path('tv-shows/', views.series_list, name='series_list'),
+    path('tv-shows/<str:movie_id>/detail/series', views.series_detail, name='series-detail'),
 ]
