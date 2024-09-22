@@ -36,6 +36,7 @@ urlpatterns = [
     path('invitations/delete/<uuid:invitation_id>/', views.invitation_delete, name='invitation_delete'),
     path('register/', views.enter_invite, name='enter_invite'),
     path('register/<str:invite_code>/', views.register, name='register'),
+    path('invite/<str:invite_code>/', views.register, name='invite'),
     path('registration_success/', views.registration_success, name='registration_success'),
     path('enter-license-key/', views.enter_license_key, name='enter_license_key'),
     path('revalidate_license-key/', views.revalidate_license, name='revalidate_license'),
