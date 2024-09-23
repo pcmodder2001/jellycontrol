@@ -14,12 +14,16 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+import os
 from django.contrib import admin
 from django.urls import path
 from jellyfin_control import views
 from django.contrib.auth import views as auth_views
 from django.conf.urls import handler400, handler403, handler404, handler500
 from jellyfin_control.views import custom_bad_request, custom_permission_denied, custom_page_not_found, custom_server_error
+from jellyfin_project import settings
+from django.conf.urls.static import static
+from django.http import FileResponse
 
 
 urlpatterns = [
@@ -54,6 +58,20 @@ urlpatterns = [
     path('tv-shows/', views.series_list, name='series_list'),
     path('tv-shows/<str:movie_id>/detail/series', views.series_detail, name='series-detail'),
 ]
+
+
+
+def serve_static(request, path, document_root=None):
+    file_path = os.path.join(document_root, path)
+    print(f"Serving static file from: {file_path}", flush=True)  # Use flush=True
+    return FileResponse(open(file_path, 'rb'))
+
+if settings.DEBUG == False:
+    urlpatterns += static(
+        settings.STATIC_URL, 
+        document_root=settings.STATIC_ROOT, 
+        view=serve_static
+    )
 
 
 handler400 = 'jellyfin_control.views.custom_bad_request'
