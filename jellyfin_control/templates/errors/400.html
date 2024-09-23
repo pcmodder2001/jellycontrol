@@ -1,0 +1,12 @@
+<!-- templates/errors/400.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="uk-section uk-section-small">
+    <div class="uk-container">
+        <h1 class="uk-heading-line"><span>400 - Bad Request</span></h1>
+        <p>Sorry, your request could not be processed.</p>
+        <a href="{% url 'home' %}" class="uk-button uk-button-primary">Go back to Home</a>
+    </div>
+</div>
+{% endblock %}

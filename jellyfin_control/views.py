@@ -1508,3 +1508,20 @@ def series_detail(request, movie_id):
         return redirect('home')
 
     return render(request, 'series_detail.html', {'movie': movie_data, 'season_data': season_data, 'config': config})
+
+
+
+#### error pages ####
+
+
+def custom_bad_request(request, exception):
+    return render(request, 'errors/400.html', status=400)
+
+def custom_permission_denied(request, exception):
+    return render(request, 'errors/403.html', status=403)
+
+def custom_page_not_found(request, exception):
+    return render(request, 'errors/404.html', status=404)
+
+def custom_server_error(request):
+    return render(request, 'errors/500.html', status=500)

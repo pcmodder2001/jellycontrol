@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import path
 from jellyfin_control import views
 from django.contrib.auth import views as auth_views
+from django.conf.urls import handler400, handler403, handler404, handler500
+from jellyfin_control.views import custom_bad_request, custom_permission_denied, custom_page_not_found, custom_server_error
 
 
 urlpatterns = [
@@ -52,3 +54,9 @@ urlpatterns = [
     path('tv-shows/', views.series_list, name='series_list'),
     path('tv-shows/<str:movie_id>/detail/series', views.series_detail, name='series-detail'),
 ]
+
+
+handler400 = 'jellyfin_control.views.custom_bad_request'
+handler403 = 'jellyfin_control.views.custom_permission_denied'
+handler404 = 'jellyfin_control.views.custom_page_not_found'
+handler500 = 'jellyfin_control.views.custom_server_error'

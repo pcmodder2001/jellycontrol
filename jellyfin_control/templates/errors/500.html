@@ -1,0 +1,12 @@
+<!-- templates/errors/500.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="uk-section uk-section-small">
+    <div class="uk-container">
+        <h1 class="uk-heading-line"><span>500 - Server Error</span></h1>
+        <p>Sorry, there was an error on our end. Please try again later.</p>
+        <a href="{% url 'home' %}" class="uk-button uk-button-primary">Go back to Home</a>
+    </div>
+</div>
+{% endblock %}
