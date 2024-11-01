@@ -16,6 +16,15 @@ from django.core.paginator import Paginator
 import json
 from django.views.decorators.http import require_POST
 from .decorators import superuser_required
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.core.mail import send_mail
+from django.http import HttpResponse
+from django.utils.http import urlsafe_base64_decode
+
+
 
 
 def log_action(action, message, user=None):
@@ -761,7 +770,7 @@ def delete_user(request, user_id):
                     try:
                         django_user = CustomUser.objects.get(jellyfin_user_id=user_id)
                         django_user.delete()
-                        messages.success(request, f"User '{username}' successfully deleted from Jellyfin and Django.")
+                        messages.success(request, f"User '{username}' successfully deleted.")
                         LogEntry.objects.create(
                             action='DELETED',
                             user=request.user,
@@ -924,7 +933,7 @@ def register(request, invite_code):
         return redirect('enter_invite')
 
     if request.method == 'POST':
-        username = request.POST.get('username')
+        #username = request.POST.get('username')
         password = request.POST.get('password')
         password2 = request.POST.get('password2')
         email = request.POST.get('email')
@@ -932,7 +941,7 @@ def register(request, invite_code):
         # Check if the username (email) is already taken in Jellyfin
         access_token = config.jellyfin_api_key
         server_url = config.server_url
-        user_check_url = f"{server_url}/Users/{username}"
+        user_check_url = f"{server_url}/Users/{email}"
         headers = {
             'X-Emby-Token': access_token,
             'Content-Type': 'application/json',
@@ -945,6 +954,12 @@ def register(request, invite_code):
                 return redirect('enter_invite')
         except requests.exceptions.RequestException as e:
             messages.error(request, f"Failed to check username: {str(e)}")
+            log_message = (f"Failed to check username: {str(e)}")
+            LogEntry.objects.create(
+            action='ERROR',
+            user=invitation.user,
+            message=log_message
+            )
             return redirect('enter_invite')
 
         # Check if passwords match
@@ -954,7 +969,7 @@ def register(request, invite_code):
 
         # Create Jellyfin user via API
         jellyfin_user_data = {
-            'Name': username,
+            'Name': email,
             'Password': password,
             'EnableAutoLogin': True  # Adjust as per your Jellyfin API requirements
         }
@@ -1525,3 +1540,89 @@ def custom_page_not_found(request, exception):
 
 def custom_server_error(request):
     return render(request, 'errors/500.html', status=500)
+
+
+User = get_user_model()
+def password_reset_request(request):
+    if request.method == "POST":
+        email = request.POST.get("email")
+        try:
+            user = User.objects.get(email=email)
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            reset_url = request.build_absolute_uri(reverse('password_reset_confirm', args=[uid, token]))
+            
+            # Send reset email
+            send_mail(
+                subject="Password Reset Request",
+                message=f"Click the link to reset your password: {reset_url}",
+                from_email="admin@example.com",
+                recipient_list=[email],
+            )
+            return HttpResponse("Password reset link sent to your email.")
+        except User.DoesNotExist:
+            return HttpResponse("User with the provided email does not exist.")
+    return render(request, "registration/password_reset_request.html")
+
+
+def password_reset_confirm(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = CustomUser.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+        user = None
+
+    # Verify the token
+    if user is not None and default_token_generator.check_token(user, token):
+        if request.method == "POST":
+            # Get new password and config information
+            new_password = request.POST.get("new_password")
+            config = get_object_or_404(Config, pk=1)  # Assumes a single config instance
+
+            # Fetch Jellyfin access token from session
+            jellyfin_token = config.jellyfin_api_key
+
+            # Define headers and URL
+            headers = {
+                'Authorization': f'MediaBrowser Token={jellyfin_token}',
+                'Content-Type': 'application/json'
+            }
+            reset_url = f'{config.server_url}/Users/{user.jellyfin_user_id}/Password'
+
+            # Step 1: Initiate password reset in Jellyfin
+            reset_payload = {
+                'ResetPassword': True,
+                'CurrentPw': None,
+                'NewPw': None
+            }
+
+            try:
+                reset_response = requests.post(reset_url, json=reset_payload, headers=headers)
+                if reset_response.status_code == 204:
+                    # Step 2: Set the new password in Jellyfin
+                    password_payload = {
+                        'ResetPassword': False,
+                        'CurrentPw': None,  # No current password needed
+                        'NewPw': new_password
+                    }
+                    password_response = requests.post(reset_url, json=password_payload, headers=headers)
+
+                    if password_response.status_code == 204:
+                        user.set_password(new_password)  # Update password locally
+                        user.save()
+                        messages.success(request, "Password reset successful.")
+                        return redirect("login")
+                    else:
+                        messages.error(request, "Failed to set the new password.")
+                else:
+                    messages.error(request, "Failed to initiate the password reset.")
+
+            except requests.exceptions.RequestException as e:
+                messages.error(request, f"Failed to reset password: {e}")
+
+        # If GET request, render the password reset form
+        return render(request, "registration/password_reset_confirm.html", {"validlink": True})
+
+    else:
+        # Invalid token or user
+        return HttpResponse("Invalid password reset link.")

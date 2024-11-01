@@ -57,6 +57,8 @@ urlpatterns = [
     path('generate-api-key/', views.generate_api_key_view, name='generate_api_key'),
     path('tv-shows/', views.series_list, name='series_list'),
     path('tv-shows/<str:movie_id>/detail/series', views.series_detail, name='series-detail'),
+    path("password_reset/", views.password_reset_request, name="password_reset_request"),
+    path("password_reset_confirm/<uidb64>/<token>/", views.password_reset_confirm, name="password_reset_confirm"),
 ]
 
 
