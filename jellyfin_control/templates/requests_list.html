@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="uk-container uk-margin-top">
+    <h1 class="uk-heading-line uk-text-center"><span>Overseer Requests</span></h1>
+
+    {% if requests %}
+    <div class="uk-overflow-auto">
+        <table class="uk-table uk-table-divider uk-table-hover uk-table-middle uk-table-small">
+            <thead class="uk-background-muted">
+                <tr>
+                    <th class="uk-text-bold">ID</th>
+                    <th class="uk-text-bold">Name</th>
+                    <th class="uk-text-bold">Status</th>
+                    <th class="uk-text-bold">Type</th>
+                    <th class="uk-text-bold">Created At</th>
+                    <th class="uk-text-bold">Updated At</th>
+                    <th class="uk-text-bold">Requested By</th>
+                    <th class="uk-text-bold">Media URL</th>
+                    <th class="uk-text-bold">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in requests %}
+                <tr>
+                    <td>{{ request.id }}</td>
+                    <td class="uk-text-truncate">{{ request.media.externalServiceSlug|default:"Unknown Title" }}</td>
+                    <td>
+                        <span class="uk-label {% if request.status == 2 %}uk-label-success{% else %}uk-label-warning{% endif %}">
+                            {{ request.status }}
+                        </span>
+                    </td>
+                    <td class="uk-text-uppercase">{{ request.type }}</td>
+                    <td>{{ request.createdAt|date:"Y-m-d H:i" }}</td>
+                    <td>{{ request.updatedAt|date:"Y-m-d H:i" }}</td>
+                    <td>
+                        <img class="uk-border-circle" src="{{ request.requestedBy.avatar }}" alt="Avatar" width="30" height="30">
+                        <span class="uk-margin-small-left">{{ request.requestedBy.displayName }}</span>
+                    </td>
+                    <td>
+                        <a href="{{ request.media.mediaUrl }}" target="_blank" class="uk-icon-button uk-margin-small-right" uk-icon="link"></a>
+                    </td>
+                    <td>
+                        <a href="{{ request.media.serviceUrl }}" target="_blank" class="uk-button uk-button-primary uk-button-small">View Details</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="uk-alert-warning" uk-alert>
+        <p class="uk-text-center">No requests found.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -687,6 +687,10 @@ def create_user(request):
 
     if request.method == 'POST':
         try:
+            email = request.POST.get('email')
+            first_name = request.POST.get('first_name')
+            last_name = request.POST.get('last_name')
+            password = request.POST.get('password')
             # Check user limit based on function settings (optional)
             # if is_user_limit_exceeded():
             #     messages.error(request, 'User creation failed. Maximum user limit reached.')
@@ -694,15 +698,18 @@ def create_user(request):
 
             # Construct the new user data based on the form input values
             new_user_data = {
-                'Name': request.POST.get('name'),
-                'Password': request.POST.get('password'),
+                'Name': email,
+                'Password': password,
+
                 # Add other required fields as per your Jellyfin API documentation
             }
-
             # Send a POST request to create a new user
             response = requests.post(create_user_url, json=new_user_data, headers=headers)
 
             if response.status_code == 200:
+                jellyfin_user_id = response.json().get('Id')
+                user = CustomUser.objects.create_user(email=email, password=password, jellyfin_user_id=jellyfin_user_id, first_name=first_name, last_name=last_name)
+
                 # Handle successful creation
                 messages.success(request, "User created successfully.")
                 LogEntry.objects.create(
@@ -933,10 +940,12 @@ def register(request, invite_code):
         return redirect('enter_invite')
 
     if request.method == 'POST':
-        #username = request.POST.get('username')
+        email = request.POST.get('email')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
         password = request.POST.get('password')
         password2 = request.POST.get('password2')
-        email = request.POST.get('email')
+        
 
         # Check if the username (email) is already taken in Jellyfin
         access_token = config.jellyfin_api_key
@@ -984,7 +993,7 @@ def register(request, invite_code):
 
         # Create the user in Django database using CustomUserManager
         try:
-            user = CustomUser.objects.create_user(email=email, password=password, jellyfin_user_id=jellyfin_user_id)
+            user = CustomUser.objects.create_user(email=email, password=password, jellyfin_user_id=jellyfin_user_id, first_name=first_name, last_name=last_name)
             messages.success(request, "Registration successful. You can now log in.")
             
             # Log the user creation
@@ -1626,3 +1635,63 @@ def password_reset_confirm(request, uidb64, token):
     else:
         # Invalid token or user
         return HttpResponse("Invalid password reset link.")
+    
+
+## request views ##
+
+
+def list_requests(request):
+    #View to retrieve a list of all requests from the Overseer API and log the actions.
+    url = "https://request.ccmediastreaming.com/api/v1/request"
+    api_key = settings.JELLYSEER_API_TOKEN
+    headers = {
+        "X-Api-Key": api_key
+    }
+
+    try:
+        # Make the API call to Overseer
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        requests_data = response.json()
+
+        # Access the 'results' field from the response
+        requests_list = requests_data.get('results', [])
+
+        # Log the successful data retrieval
+        log_entry = LogEntry(
+            action='INFO',
+            user=request.user,
+            message='Successfully retrieved requests from Jellyseer API.',
+        )
+        log_entry.save()
+        print(requests_data)
+        # Pass the requests list to the template
+        return render(request, 'requests_list.html', {'requests': requests_list})
+
+    except requests.exceptions.HTTPError as http_err:
+        log_entry = LogEntry(
+            action='ERROR',
+            user=request.user,
+            message=f'HTTP error occurred: {str(http_err)}',
+        )
+        log_entry.save()
+        return render(request, 'requests_list.html', {'error': str(http_err)})
+
+    except Exception as err:
+        log_entry = LogEntry(
+            action='ERROR',
+            user=request.user,
+            message=f'An error occurred: {str(err)}',
+        )
+        log_entry.save()
+        return render(request, 'requests_list.html', {'error': str(err)})
+
+    except Exception as err:
+        # Log any other exceptions
+        log_entry = LogEntry(
+            action='ERROR',
+            user=request.user,
+            message=f'An error occurred: {str(err)}',
+        )
+        log_entry.save()
+        return render(request, 'requests_list.html', {'error': str(err)})

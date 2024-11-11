@@ -18,9 +18,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 #### VERSION ####
 
-version = "v1.0.0"
+APP_VERSION = "v1.0.3"
 
-
+JELLYSEER_API_TOKEN = "MTcxODMwMzAzNTM1M2QzNWZjNjRhLWQzZGMtNDY4Yy04MmY0LTM1NjhjMjdmOTFlZA=="
 ### Licenseing Settings
 
 APP_NAME = "Jellyfin_control"
@@ -33,7 +33,7 @@ LICENSING_SERVER_URL = 'http://192.168.0.93:8001/licenses'  # replace with actua
 SECRET_KEY = 'django-insecure-@1*ll#bwr*=jji#cqp15gpf4+5q8gftfh$5ul92ms(@%$bi-d$'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -151,8 +151,6 @@ AUTH_USER_MODEL = 'jellyfin_control.CustomUser'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
@@ -161,12 +159,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_URL = '/static/'
 
 # This is where collectstatic will collect all static files
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+#STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Additional locations the staticfiles app will traverse to find static files
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'jellyfin_control/static'),
-]
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'assets'),
+)
 
 # settings.py
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
