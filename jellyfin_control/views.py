@@ -23,6 +23,7 @@ from django.utils.encoding import force_bytes
 from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.utils.http import urlsafe_base64_decode
+from packaging import version  # To handle version comparison
 
 
 
@@ -1639,7 +1640,8 @@ def password_reset_confirm(request, uidb64, token):
 
 ## request views ##
 
-
+@login_required
+@superuser_required
 def list_requests(request):
     #View to retrieve a list of all requests from the Overseer API and log the actions.
     url = "https://request.ccmediastreaming.com/api/v1/request"
@@ -1695,3 +1697,113 @@ def list_requests(request):
         )
         log_entry.save()
         return render(request, 'requests_list.html', {'error': str(err)})
+
+@login_required
+@superuser_required
+def check_for_updates(request):
+    # Define your GitHub repository
+    repo = "pcmodder2001/jellycontrol"
+    
+    # Fetch the latest release version from GitHub
+    latest_url = f"https://api.github.com/repos/{repo}/releases/latest"
+    all_releases_url = f"https://api.github.com/repos/{repo}/releases"
+    
+    # Get latest release
+    latest_response = requests.get(latest_url)
+    
+    if latest_response.status_code == 200:
+        latest_version = latest_response.json().get("tag_name")
+        
+        # Compare versions
+        if latest_version and latest_version != settings.APP_VERSION:
+            update_available = True
+            message = f"A newer version ({latest_version}) is available."
+        else:
+            update_available = False
+            message = "You are up-to-date with version " + settings.APP_VERSION
+    else:
+        update_available = False
+        message = "Failed to fetch the latest version information."
+    
+    # Fetch all releases
+    all_releases_response = requests.get(all_releases_url)
+    
+    if all_releases_response.status_code == 200:
+        releases = all_releases_response.json()
+        versions = [
+            {'tag': release['tag_name'], 'url': release['html_url']}
+            for release in releases
+        ]
+    else:
+        versions = []
+    
+    context = {
+        'update_available': update_available,
+        'message': message,
+        'current_version': settings.APP_VERSION,
+        'latest_version': latest_version if latest_response.status_code == 200 else None,
+        'versions': versions,
+    }
+    
+    return render(request, "check_for_updates.html", context)
+
+
+@login_required
+@superuser_required
+@require_POST
+def update_is_disabled(request):
+    data = json.loads(request.body)
+    user_id = data.get('user_id')
+    is_disabled = data.get('is_disabled', False)
+
+    access_token = request.session.get('jellyfin_access_token')
+    if not access_token:
+        return JsonResponse({'success': False, 'error': "No access token found in session."})
+
+    config = Config.objects.first()
+    if not config:
+        return JsonResponse({'success': False, 'error': "No Jellyfin server URL configured."})
+
+    server_url = config.server_url
+    user_url = f'{server_url}/Users/{user_id}'  # Endpoint to get user data, including policy info
+
+    headers = {
+        'X-Emby-Token': access_token,
+        'Content-Type': 'application/json',
+    }
+
+    try:
+        # Fetch full user data to get PasswordResetProviderId and AuthenticationProviderId
+        response = requests.get(user_url, headers=headers)
+        if response.status_code != 200:
+            return JsonResponse({
+                'success': False,
+                'error': f"Failed to fetch current user data: {response.status_code} - {response.text}"
+            })
+
+        user_data = response.json()
+        policy = user_data.get('Policy', {})
+        password_reset_provider_id = policy.get('PasswordResetProviderId', 'default_provider_id')
+        authentication_provider_id = policy.get('AuthenticationProviderId', 'default_auth_provider_id')
+
+        # Prepare updated policy data with only the is_disabled field and the fetched values
+        updated_policy_data = {
+            'IsDisabled': is_disabled,
+            'PasswordResetProviderId': password_reset_provider_id,
+            'AuthenticationProviderId': authentication_provider_id,
+        }
+
+        # Update user policy data
+        update_policy_url = f'{server_url}/Users/{user_id}/Policy'
+        response = requests.post(update_policy_url, json=updated_policy_data, headers=headers)
+        if response.status_code == 204:
+            messages.success(request, "User updated")
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': f"Failed to update user policy: {response.status_code} - {response.text}"
+            })
+
+    except requests.RequestException as e:
+        return JsonResponse({'success': False, 'error': f"Failed to connect to Jellyfin server: {str(e)}"})

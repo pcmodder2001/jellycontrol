@@ -18,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 #### VERSION ####
 
-APP_VERSION = "v1.0.3"
+APP_VERSION = "v2.0.0"
 
 JELLYSEER_API_TOKEN = "MTcxODMwMzAzNTM1M2QzNWZjNjRhLWQzZGMtNDY4Yy04MmY0LTM1NjhjMjdmOTFlZA=="
 ### Licenseing Settings
