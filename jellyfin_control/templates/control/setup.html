@@ -9,7 +9,7 @@
     <form id="setup-form-1" method="post" action="{% url 'setup' %}">
         {% csrf_token %}
         <input type="hidden" name="step" value="1">
-        <div class="uk-margin">
+        <div class="uk-margin custom-white-box">
             <label class="uk-form-label" for="server_url">Jellyfin Server URL:</label>
             <div class="uk-form-controls">
                 <small><strong>Please make sure the url has / at the end.</strong></small>
@@ -20,11 +20,11 @@
     </form>
 </div>
 
-<div id="setup-step-2" style="display:none;">
+<div id="setup-step-2" style="display:none;" class="custom-white-box">
     <form id="setup-form-2" method="post" action="{% url 'setup' %}">
         {% csrf_token %}
         <input type="hidden" name="step" value="2">
-        <div class="uk-margin">
+        <div class="uk-margin ">
             <label class="uk-form-label" for="username">Admin Username:</label>
             <div class="uk-form-controls">
                 <input type="text" class="uk-input" id="username" name="username" required>

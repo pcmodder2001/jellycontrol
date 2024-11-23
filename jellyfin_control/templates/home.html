@@ -4,9 +4,10 @@
 
 {% block content %}
 <div class="uk-container uk-margin-large-top uk-margin-large-bottom">
+
     <!-- Welcome Card -->
-    <div class="uk-card uk-box-shadow-medium">
-        <h1 class="uk-heading-medium uk-text-center">Welcome {{ username }}</h1>
+    <div class="uk-card uk-box-shadow-medium uk-border-rounded uk-padding-large" style="background: linear-gradient(345deg, #77b1efab, #3b009b); color: #fff;">
+        <h1 class="uk-heading-medium uk-text-center" style="text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);">Welcome {{ username }}</h1>
         <p class="uk-text-center uk-text-lead">
             {% if is_superuser %}
                 Manage your Jellyfin users, invitations, and settings here.
@@ -14,66 +15,78 @@
                 View your latest media updates and system stats.
             {% endif %}
         </p>
-        
-        <!-- Quick Access Buttons -->
-        <div class="uk-grid uk-grid-large uk-child-width-1-3@s uk-flex-center uk-margin-top" uk-grid>
-            {% if is_superuser %}
-            <div>
-                <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
-                    <h3 class="uk-card-title uk-text-center"> <span uk-icon="icon: users"></span> <span class="text">Users</span></h3>
-                    <p class="uk-text-center">View and manage user accounts.</p>
-                    <div class="uk-flex uk-flex-center">
-                        <a href="{% url 'view_users' %}" class="uk-button uk-button-default uk-button-large">Manage Users</a>
-                    </div>
+    </div>
+
+    <!-- Quick Access Buttons -->
+    <div class="uk-grid uk-grid-large uk-child-width-1-3@s uk-flex-center uk-margin-top" uk-grid>
+        {% if is_superuser %}
+        <div>
+            <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
+                <h3 class="uk-card-title uk-text-center">
+                    <span uk-icon="icon: users"></span> Users
+                </h3>
+                <p class="uk-text-center">View and manage user accounts.</p>
+                <div class="uk-flex uk-flex-center">
+                    <a href="{% url 'view_users' %}" class="uk-button uk-button-primary uk-button-large">Manage Users</a>
                 </div>
             </div>
-            {% endif %}
-            <div>
-                <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
-                    <h3 class="uk-card-title uk-text-center"> <span uk-icon="icon: social"></span> <span class="text">Invitations</span></h3>
-                    <p class="uk-text-center">Create and manage invite codes.</p>
-                    <div class="uk-flex uk-flex-center">
-                        <a href="{% url 'invitation_list' %}" class="uk-button uk-button-default uk-button-large">Manage Invitations</a>
-                    </div>
-                </div>
-            </div>
-            {% if is_superuser %}
-            <div>
-                <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
-                    <h3 class="uk-card-title uk-text-center"> <span uk-icon="icon: settings"></span> <span class="text">Settings</span></h3>
-                    <p class="uk-text-center">Configure server settings.</p>
-                    <div class="uk-flex uk-flex-center">
-                        <a href="{% url 'settings' %}" class="uk-button uk-button-default uk-button-large">View Settings</a>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
         </div>
+        {% endif %}
+        <div>
+            <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
+                <h3 class="uk-card-title uk-text-center">
+                    <span uk-icon="icon: social"></span> Invitations
+                </h3>
+                <p class="uk-text-center">Create and manage invite codes.</p>
+                <div class="uk-flex uk-flex-center">
+                    <a href="{% url 'invitation_list' %}" class="uk-button uk-button-primary uk-button-large">Manage Invitations</a>
+                </div>
+            </div>
+        </div>
+        {% if is_superuser %}
+        <div>
+            <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
+                <h3 class="uk-card-title uk-text-center">
+                    <span uk-icon="icon: settings"></span> Settings
+                </h3>
+                <p class="uk-text-center">Configure server settings.</p>
+                <div class="uk-flex uk-flex-center">
+                    <a href="{% url 'settings' %}" class="uk-button uk-button-primary uk-button-large">View Settings</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <!-- System Status Section -->
-    <div class="uk-margin-large-top uk-margin-large-bottom">
+    <div class="uk-margin-large-top">
         <h2 class="uk-heading-line uk-text-center"><span>System Stats</span></h2>
         <div class="uk-grid uk-grid-match uk-child-width-1-3@m" uk-grid>
             {% if is_superuser %}
             <div>
-                <div class="uk-card uk-card-default uk-card-body">
-                    <h3 class="uk-card-title">Jellyfin Server</h3>
+                <div class="uk-card uk-card-default uk-card-body uk-border-rounded uk-box-shadow-small">
+                    <h3 class="uk-card-title">
+                        <span uk-icon="icon: server"></span> Jellyfin Server
+                    </h3>
                     <p>Status: <strong>{{ server_status }}</strong></p>
                     <p>Version: <strong>{{ server_version }}</strong></p>
                 </div>
             </div>
             <div>
-                <div class="uk-card uk-card-default uk-card-body">
-                    <h3 class="uk-card-title">User Statistics</h3>
+                <div class="uk-card uk-card-default uk-card-body uk-border-rounded uk-box-shadow-small">
+                    <h3 class="uk-card-title">
+                        <span uk-icon="icon: users"></span> User Statistics
+                    </h3>
                     <p>Total Users: <strong>{{ total_users }}</strong></p>
                     <p>Active Sessions: <strong>{{ active_sessions }}</strong></p>
                 </div>
             </div>
             {% endif %}
             <div>
-                <div class="uk-card uk-card-default uk-card-body">
-                    <h3 class="uk-card-title">Media Statistics</h3>
+                <div class="uk-card uk-card-default uk-card-body uk-border-rounded uk-box-shadow-small">
+                    <h3 class="uk-card-title">
+                        <span uk-icon="icon: film"></span> Media Statistics
+                    </h3>
                     <p>Total Movies: <strong>{{ total_movies }}</strong></p>
                     <p>Total TV Series: <strong>{{ total_series }}</strong></p>
                 </div>
@@ -81,19 +94,17 @@
         </div>
     </div>
 
-    <!-- Latest Movie Section -->
+    <!-- Latest Media Sections -->
     <div class="uk-margin-large-top">
         <h2 class="uk-heading-line uk-text-center"><span>Latest Movies</span></h2>
         <div class="uk-grid uk-child-width-1-4@m uk-child-width-1-2@s uk-flex-center" uk-grid>
             {% for movie in latest_movies %}
             <div>
-                <a href="{% url 'movie_detail' movie.Id %}" class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded card-fixed-height">
+                <a href="{% url 'movie_detail' movie.Id %}" class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded uk-box-shadow-medium">
                     {% if movie.ImageTags.Primary %}
-                    <img src="{{ config.server_url }}Items/{{ movie.Id }}/Images/Primary?tag={{ movie.ImageTags.Primary }}&quality=90&maxWidth=300"
-                        alt="{{ movie.Name }}" class="uk-margin-small-bottom uk-width-1-1">
+                    <img src="{{ config.server_url }}Items/{{ movie.Id }}/Images/Primary?tag={{ movie.ImageTags.Primary }}&quality=90&maxWidth=300" alt="{{ movie.Name }}" class="uk-margin-small-bottom uk-width-1-1 uk-box-shadow-small">
                     {% else %}
-                    <img src="{% static 'images/no-image.png' %}" alt="No image available"
-                        class="uk-margin-small-bottom uk-width-1-1">
+                    <img src="{% static 'images/no-image.png' %}" alt="No image available" class="uk-margin-small-bottom uk-width-1-1 uk-box-shadow-small">
                     {% endif %}
                     <h3 class="uk-card-title uk-text-center">{{ movie.Name }}</h3>
                     <p class="uk-text-center">{{ movie.ProductionYear }}</p>
@@ -104,9 +115,8 @@
             {% endfor %}
         </div>
     </div>
-
-    <!-- Latest Series Section -->
-    <div class="uk-margin-large-top">
+       <!-- Latest Series Section -->
+       <div class="uk-margin-large-top">
         <h2 class="uk-heading-line uk-text-center"><span>Latest Series</span></h2>
         <div class="uk-grid uk-child-width-1-4@m uk-child-width-1-2@s uk-flex-center" uk-grid>
             {% for series in latest_shows %}
@@ -128,10 +138,9 @@
             {% endfor %}
         </div>
     </div>
-    
     {% if is_superuser %}
     <!-- Recent Activity Section -->
-    <div class="uk-margin-large-top">
+    <div class="uk-margin-large-top custom-white-box" >
         <h2 class="uk-heading-line uk-text-center"><span>Recent Activity</span></h2>
 
         <table class="uk-table uk-table-divider uk-table-hover uk-table-middle uk-table-small uk-table-responsive">
@@ -192,5 +201,9 @@
         </table>
     </div>
     {% endif %}
+</div>
+
+    <!-- Additional Sections can follow similar patterns -->
+
 </div>
 {% endblock %}

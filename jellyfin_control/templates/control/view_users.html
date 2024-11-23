@@ -25,7 +25,7 @@
     </div>
     {% else %}
     <!-- User Table -->
-    <div class="uk-overflow-auto">
+    <div class="uk-overflow-auto custom-white-box">
         <table class="uk-table uk-table-divider uk-table-hover uk-table-middle uk-table-small uk-table-responsive">
             <thead>
                 <tr>
@@ -75,10 +75,10 @@
                             <form action="{% url 'delete_user' user_id=user.Id %}" method="post" style="display:inline;"
                                 onsubmit="return confirm('Are you sure you want to delete this user?');">
                                 {% csrf_token %}
-                                <button type="submit"
-                                    class="uk-button uk-button-danger uk-button-small uk-border-rounded">
-                                    <span uk-icon="icon: trash"></span> Delete
-                                </button>
+                                <button type="button" class="uk-button uk-button-danger uk-button-small uk-border-rounded open-delete-modal"
+                                data-delete-url="{% url 'delete_user' user_id=user.Id %}" data-username="{{ user.Name }}">
+                                <span uk-icon="icon: trash"></span> Delete
+                            </button>
                             </form>
                         </div>
                     </td>
@@ -96,6 +96,39 @@
     {% endif %}
 </div>
 
+
+<!-- Reusable Delete Confirmation Modal -->
+<div id="delete-modal" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical uk-border-rounded">
+        <!-- Close Button -->
+        <button class="uk-modal-close-default" type="button" uk-close></button>
+        
+        <!-- Modal Title -->
+        <h2 class="uk-modal-title uk-text-center">Confirm Deletion</h2>
+        <p class="uk-text-center">Are you sure you want to delete user <strong id="delete-username"></strong>?</p>
+
+        <!-- Buttons Section -->
+        <div class="uk-flex uk-flex-center uk-margin-top">
+            <!-- Form Submit Button -->
+            <form id="delete-form" method="post" style="margin-right: 10px;">
+                {% csrf_token %}
+                <button type="submit" class="uk-button uk-button-danger uk-border-rounded">
+                    <span uk-icon="icon: trash"></span> Confirm Delete
+                </button>
+            </form>
+
+            <!-- Cancel Button -->
+            <button type="button" class="uk-button uk-button-default uk-border-rounded"
+                uk-toggle="target: #delete-modal">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+
+
+
 <!-- Modal for Create User -->
 <div id="create-user-modal" uk-modal>
     <div class="uk-modal-dialog uk-modal-body uk-margin-auto-vertical uk-border-rounded">
@@ -111,7 +144,7 @@
             <div class="uk-margin">
                 <label class="uk-form-label" for="email">Email:</label>
                 <div class="uk-form-controls">
-                    <input class="uk-input" id="email" name="email" type="email" required>
+                    <input class="uk-input" id="email" name="email" type="email" required placeholder="Enter Users Email">
                 </div>
             </div>
             <div class="uk-margin">
@@ -206,5 +239,22 @@
         });
     });
 </script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Open Delete Modal
+        document.querySelectorAll('.open-delete-modal').forEach(button => {
+            button.addEventListener('click', function () {
+                const deleteUrl = this.getAttribute('data-delete-url');
+                const username = this.getAttribute('data-username');
+                
+                // Set the form action and username in modal
+                document.getElementById('delete-form').setAttribute('action', deleteUrl);
+                document.getElementById('delete-username').innerText = username;
 
+                // Open the modal
+                UIkit.modal('#delete-modal').show();
+            });
+        });
+    });
+</script>
 {% endblock %}

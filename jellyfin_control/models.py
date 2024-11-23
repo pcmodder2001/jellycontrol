@@ -4,6 +4,8 @@ import uuid
 from django.utils import timezone
 from django.conf import settings
 
+
+
 class Function(models.Model):
     name = models.CharField(max_length=255, unique=True)
     enabled = models.BooleanField(default=False)
@@ -27,6 +29,11 @@ class Config(models.Model):
     server_url = models.URLField()
     app_instance_id = models.CharField(max_length=100, unique=True, null=True, blank=True)  # Unique identifier for the app instance
     jellyfin_api_key = models.CharField(max_length=500, unique=True,  null=False, blank=False)
+    invite_code = models.CharField(max_length=50, unique=True)
+
+
+
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:

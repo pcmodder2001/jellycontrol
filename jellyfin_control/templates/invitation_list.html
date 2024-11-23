@@ -6,8 +6,17 @@
 <div class="uk-container uk-margin-large-top">
     <!-- Page Header -->
     <div class="uk-flex uk-flex-between uk-flex-middle uk-margin-bottom">
-        <h1 class="uk-heading-medium">Invitation List</h1>
-        <a href="{% url 'invitation_create' %}" class="uk-button uk-button-primary uk-button-large uk-border-rounded"><span uk-icon="icon: plus-circle" style="margin-right: 10px;"></span> Create Invite</a>
+        <h1 class="uk-heading-line uk-text-center"><span>Invitation List</span></h1>
+        <div>
+            <a href="{% url 'invitation_create' %}" class="uk-button uk-button-primary uk-button-large uk-border-rounded">
+                <span uk-icon="icon: plus-circle" style="margin-right: 10px;"></span> Create Invite
+            </a>
+            {% if not default_invite_exists %}
+            <button id="create-default-invite" class="uk-button uk-button-secondary uk-button-large uk-border-rounded">
+                <span uk-icon="icon: bolt" style="margin-right: 10px;"></span> Create Default Invite
+            </button>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Invitations Table -->
@@ -64,4 +73,58 @@
         </div>
     {% endif %}
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const createDefaultInviteButton = document.getElementById('create-default-invite');
+        if (createDefaultInviteButton) {
+            createDefaultInviteButton.addEventListener('click', function () {
+                fetch("{% url 'create_invitation' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            text: data.message,
+                            icon: 'success',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 5000,
+                            timerProgressBar: true
+                        });
+                        setTimeout(() => location.reload(), 1500); // Reload to show the new invitation
+                    } else {
+                        Swal.fire({
+                            text: data.error || "An error occurred while creating the default invite.",
+                            icon: 'error',
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 5000,
+                            timerProgressBar: true
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        text: "An unexpected error occurred.",
+                        icon: 'error',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 5000,
+                        timerProgressBar: true
+                    });
+                });
+            });
+        }
+    });
+</script>
 {% endblock %}

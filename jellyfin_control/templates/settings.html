@@ -5,77 +5,82 @@
 {% block content %}
 <div class="uk-container uk-margin-large-top">
     <!-- Main Heading -->
-    <h1 class="uk-heading-medium uk-text-center">Application Settings</h1>
-
-    <!-- Heading Line -->
-    <hr class="uk-divider-icon">
+    <h1 class="uk-heading-line uk-text-center" style="width: 100%; padding-bottom: 20px;">
+        <span>Application Settings</span>
+    </h1>   
 
     <!-- Settings Form -->
-    <div class="uk-grid uk-grid-medium uk-child-width-1-2@s">
+    <div class="uk-grid uk-grid-large uk-child-width-1-2@s uk-flex-center" uk-grid>
         <!-- Config Form -->
         <div>
-            <h2 class="uk-heading-small">Configuration</h2>
-            <form method="post" action="{% url 'settings' %}" class="uk-form-stacked">
+            <form method="post" action="{% url 'settings' %}" class="uk-form-stacked uk-box-shadow-small uk-padding uk-background-muted" style="border-radius: 10px;">
                 {% csrf_token %}
+                
                 <div class="uk-margin">
                     <label class="uk-form-label" for="server_url">Server URL:</label>
                     <div class="uk-form-controls">
-                        <small style="color: red;"><strong>YOU MUST HAVE A "/" AT THE END OF THE URL IN ORDER FOR THE IMAGES TO LOAD</strong></small>
-                        <input class="uk-input" id="server_url" name="server_url" type="text" value="{{ config.server_url }}" placeholder="Enter server URL">
+                        <input 
+                            class="uk-input uk-form-large" 
+                            id="server_url" 
+                            name="server_url" 
+                            type="text" 
+                            value="{{ config.server_url }}" 
+                            placeholder="https://example.com/" 
+                            required
+                        >
+                        <p class="uk-text-small uk-text-danger uk-margin-small-top">
+                            <strong>Note:</strong> Ensure the URL ends with a <code>/</code> for images to load correctly.
+                        </p>
                     </div>
                 </div>
+                
+
+
                 <div class="uk-margin">
-                    <label class="uk-form-label" for="app_instance_id">App Instance ID:</label>
-                    <div class="uk-form-controls">
-                        <input class="uk-input" id="app_instance_id" name="app_instance_id" type="text" value="{{ config.app_instance_id }}" placeholder="Enter app instance ID" readonly>
-                    </div>
-                </div>
-                <div class="uk-margin">
-                    <small style="color: red;"><strong>Needed to register users with invite code</strong></small>
                     <label class="uk-form-label" for="jellyfin_api_key">Jellyfin API Key:</label>
                     <div class="uk-form-controls uk-flex">
-                        <!-- API Key Input -->
-                        <input class="uk-input" id="jellyfin_api_key" name="jellyfin_api_key" type="text" style="width: 60%;" value="{{ config.jellyfin_api_key }}" placeholder="Enter Jellyfin API Key" readonly>
-                        
-                        <!-- Generate Button -->
-                        <button type="button" id="generate-api-key-btn" class="uk-button uk-button-primary uk-margin-left">Generate</button>
+                        <input 
+                            class="uk-input uk-form-large" 
+                            id="jellyfin_api_key" 
+                            name="jellyfin_api_key" 
+                            type="text" 
+                            style="width: 70%;" 
+                            value="{{ config.jellyfin_api_key }}" 
+                            placeholder="Enter API Key" 
+                        >
+                        <button 
+                            type="button" 
+                            id="generate-api-key-btn" 
+                            class="uk-button uk-button-primary uk-margin-left"
+                        >
+                            Generate
+                        </button>
                     </div>
-                    <!-- Placeholder for showing the API key generation status -->
-                    <div id="api-key-status" class="uk-margin-small-top"></div>
+                    <p class="uk-text-meta uk-margin-small-top" id="api-key-status"></p>
                 </div>
-                <button class="uk-button uk-button-primary" type="submit">Save Configuration</button>
+
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="invite_code">Jellyfin Invite Code:</label>
+                    <div class="uk-form-controls">
+                        <input 
+                            class="uk-input uk-form-large" 
+                            id="invite_code" 
+                            name="invite_code" 
+                            type="text" 
+                            value="{{ config.invite_code }}" 
+                            placeholder="Enter Invite Code" 
+                        >
+                    </div>
+                </div>
+
+                <button 
+                    class="uk-button uk-button-primary uk-width-1-1 uk-margin-top" 
+                    type="submit"
+                >
+                    Save Configuration
+                </button>
             </form>
         </div>
-
-        <!-- License Form
-        <div>
-            <h2 class="uk-heading-small">License</h2>
-            <form method="post" action="" class="uk-form-stacked">
-                {% csrf_token %}
-                <div class="uk-margin">
-                    <label class="uk-form-label" for="key">License Key:</label>
-                    <div class="uk-form-controls">
-                        <input class="uk-input" id="key" name="key" type="text" value="{{ license.key }}" placeholder="Enter license key" required readonly>
-                    </div>
-                </div>
-                <div class="uk-margin">
-                    <label class="uk-form-label">
-                        <input class="uk-checkbox" name="validated" type="checkbox" {% if license.validated %}checked{% endif %} disabled> Validated
-                    </label>
-                </div>
-                <div class="uk-margin">
-                    <label class="uk-form-label" for="expires_at">Expires At:</label>
-                    <div class="uk-form-controls">
-                        <input class="uk-input" id="expires_at" name="expires_at" type="datetime-local" value="{{ license.expires_at|date:'Y-m-d\TH:i' }}" readonly>
-                    </div>
-                </div>
-                <div class="uk-margin">
-                    <label class="uk-form-label">
-                        <input class="uk-checkbox" name="revoked" type="checkbox" {% if license.revoked %}checked{% endif %} disabled> Revoked
-                    </label>
-                </div>
-            </form>
-        </div> -->
     </div>
 </div>
 
@@ -98,13 +103,16 @@ document.getElementById('generate-api-key-btn').addEventListener('click', functi
         if (data.success) {
             document.getElementById('jellyfin_api_key').value = data.message;
             apiKeyStatus.textContent = 'API key generated successfully!';
+            apiKeyStatus.className = 'uk-text-success';
         } else {
             apiKeyStatus.textContent = `Error: ${data.error}`;
+            apiKeyStatus.className = 'uk-text-danger';
         }
     })
     .catch(error => {
         console.error('Error:', error);
         apiKeyStatus.textContent = 'An error occurred while generating the API key.';
+        apiKeyStatus.className = 'uk-text-danger';
     });
 });
 </script>

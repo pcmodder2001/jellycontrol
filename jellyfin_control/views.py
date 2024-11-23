@@ -24,6 +24,8 @@ from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.utils.http import urlsafe_base64_decode
 from packaging import version  # To handle version comparison
+from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
 
 
 
@@ -819,6 +821,52 @@ def invitation_list(request):
     
     return render(request, 'invitation_list.html', {'invitations': invitations})
 
+
+@login_required
+@superuser_required
+def create_invitation(request):
+    if request.method == 'POST':
+        try:
+            # Retrieve the configuration instance
+            config = Config.objects.first()
+            if not config or not config.invite_code:
+                return JsonResponse({
+                    "success": False,
+                    "error": "No invite code found in the configuration. Please set an invite code in the admin panel."
+                }, status=400)
+
+            # Hardcoded values for the invitation
+            invite_code = config.invite_code
+            max_users = 500
+            used_count = 0
+            expiry = None  # Add specific datetime if needed
+            user = get_object_or_404(CustomUser, pk=1)  # Adjust to select the correct user
+
+            # Create the invitation
+            invitation = Invitation.objects.create(
+                invite_code=invite_code,
+                max_users=max_users,
+                used_count=used_count,
+                expiry=expiry,
+                user=user,
+            )
+
+            return JsonResponse({
+                "success": True,
+                "message": f"Invitation {invitation.invite_code} created successfully.",
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                "success": False,
+                "error": f"An unexpected error occurred: {str(e)}"
+            }, status=500)
+
+    return JsonResponse({
+        "success": False,
+        "error": "Invalid request method. Only POST requests are allowed.",
+    }, status=405)
+
 @login_required
 def invitation_create(request):
     if request.method == 'POST':
@@ -1227,9 +1275,14 @@ def settings_view(request):
         config_instance = Config.objects.first()  # Assuming only one instance of Config
         if config_instance:
             config_instance.server_url = request.POST.get('server_url')
+            config_instance.jellyfin_api_key = request.POST.get('jellyfin_api_key')
+            config_instance.invite_code = request.POST.get('invite_code')  # Allow setting invite code
             config_instance.save()
 
-        messages.success(request, 'Settings updated successfully.')
+            messages.success(request, 'Settings updated successfully.')
+        else:
+            messages.error(request, 'Configuration not found. Please ensure it exists.')
+
         return redirect('settings')
 
     else:
@@ -1241,6 +1294,7 @@ def settings_view(request):
             'config': config_instance,
             'license': license_instance,
         })
+
     
 
 @login_required
@@ -1553,6 +1607,8 @@ def custom_server_error(request):
 
 
 User = get_user_model()
+
+
 def password_reset_request(request):
     if request.method == "POST":
         email = request.POST.get("email")
@@ -1561,17 +1617,27 @@ def password_reset_request(request):
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             reset_url = request.build_absolute_uri(reverse('password_reset_confirm', args=[uid, token]))
-            
-            # Send reset email
-            send_mail(
+
+            # Render the email HTML template
+            email_html_content = render_to_string("emails/password_reset_email.html", {
+                'user': user,
+                'reset_url': reset_url,
+            })
+
+            # Create and send email
+            email_message = EmailMessage(
                 subject="Password Reset Request",
-                message=f"Click the link to reset your password: {reset_url}",
+                body=email_html_content,
                 from_email="admin@example.com",
-                recipient_list=[email],
+                to=[email],
             )
-            return HttpResponse("Password reset link sent to your email.")
+            email_message.content_subtype = "html"  # This is important to set HTML content
+            email_message.send()
+
+            messages.success(request, "Password reset link sent to your email.")
+            return redirect("login")
         except User.DoesNotExist:
-            return HttpResponse("User with the provided email does not exist.")
+            messages.error(request, "User with the provided email does not exist.")
     return render(request, "registration/password_reset_request.html")
 
 
@@ -1585,11 +1651,15 @@ def password_reset_confirm(request, uidb64, token):
     # Verify the token
     if user is not None and default_token_generator.check_token(user, token):
         if request.method == "POST":
-            # Get new password and config information
             new_password = request.POST.get("new_password")
-            config = get_object_or_404(Config, pk=1)  # Assumes a single config instance
+            confirm_password = request.POST.get("confirm_password")
 
-            # Fetch Jellyfin access token from session
+            if new_password != confirm_password:
+                messages.error(request, "Passwords do not match. Please try again.")
+                return render(request, "registration/password_reset_confirm.html", {"validlink": True})
+
+            # Get config for Jellyfin integration
+            config = get_object_or_404(Config, pk=1)  # Assumes a single config instance
             jellyfin_token = config.jellyfin_api_key
 
             # Define headers and URL
@@ -1630,12 +1700,13 @@ def password_reset_confirm(request, uidb64, token):
             except requests.exceptions.RequestException as e:
                 messages.error(request, f"Failed to reset password: {e}")
 
-        # If GET request, render the password reset form
         return render(request, "registration/password_reset_confirm.html", {"validlink": True})
 
     else:
         # Invalid token or user
-        return HttpResponse("Invalid password reset link.")
+        messages.error(request, "Invalid password reset link.")
+        return redirect("password_reset_request")
+
     
 
 ## request views ##

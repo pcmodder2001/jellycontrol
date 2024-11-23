@@ -10,11 +10,11 @@
     </h1>
 
     <!-- Form for Creating Invitation -->
-    <form method="post" class="uk-form-stacked uk-width-1-2@s uk-margin-auto">
+    <form method="post" class="uk-form-stacked uk-width-1-2@s uk-margin-auto custom-white-box">
         {% csrf_token %}
 
         <!-- Invite Code Field -->
-        <div class="uk-margin">
+        <div class="uk-margin custom">
             <label class="uk-form-label" for="invite_code">Invite Code:</label>
             <div class="uk-form-controls">
                 <input class="uk-input" id="invite_code" name="invite_code" type="text" required readonly>

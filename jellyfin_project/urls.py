@@ -15,6 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 import os
+from django.contrib import admin
 from django.urls import path
 from jellyfin_control import views
 from django.contrib.auth import views as auth_views
@@ -25,6 +26,7 @@ from django.http import FileResponse
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
     path('setup/', views.setup, name='setup'),
     path('', views.custom_login, name='login'),
     path('logout/', views.custom_logout, name='logout'),  # Add this line for logout
@@ -59,6 +61,8 @@ urlpatterns = [
     path("check-for-updates/", views.check_for_updates, name="check_for_updates"),
     path('update-is-disabled/', views.update_is_disabled, name='update_is_disabled'),
     path('jellyseer/requests/', views.list_requests, name='jellyseer_requests'),
+    path('create-default-invite/', views.create_invitation, name='create_invitation'),
+
 ]
 
 

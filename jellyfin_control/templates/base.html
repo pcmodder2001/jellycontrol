@@ -6,7 +6,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="https://raw.githubusercontent.com/pcmodder2001/jellycontrol/refs/heads/main/jellyfin_control/static/assets/custom_logo.png" type="image/x-icon">
+    <link rel="icon"
+        href="https://raw.githubusercontent.com/pcmodder2001/jellycontrol/refs/heads/main/jellyfin_control/static/assets/custom_logo.png"
+        type="image/x-icon">
 
     <title>{% block title %}{% endblock %}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.6.22/css/uikit.min.css" />
@@ -59,7 +61,7 @@
             padding: 0;
             height: 100%;
             overflow: hidden;
-            background-color: var(--background-color);
+            background: linear-gradient(345deg, #77b1efab, #3b009b);
             color: var(--text-color);
         }
 
@@ -360,6 +362,31 @@
             padding: 10px;
             text-align: center;
         }
+
+        .custom-white-box {
+            background-color: white;
+            padding: 2%;
+            border-radius: 10px;
+        }
+
+        .uk-active {
+            background: linear-gradient(345deg, #77b1efab, #3b009b);
+
+        }
+
+        .uk-card-default {
+            background: #ffffff2b;
+            color: #000000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .08);
+        }
+
+        .uk-card-default:hover {
+            background: #ffffff;
+            color: #000000;
+            /* Changed text color for better contrast */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, .12);
+            /* Optional: slightly enhanced shadow on hover */
+        }
     </style>
 
 </head>
@@ -368,42 +395,64 @@
     <div class="sidebar collapsed" id="sidebar">
         <header>
             <a href="/home">
-                <img src="https://raw.githubusercontent.com/pcmodder2001/jellycontrol/refs/heads/main/jellyfin_control/static/assets/custom_logo.png" alt="Site Logo" class="logo">
+                <img src="https://raw.githubusercontent.com/pcmodder2001/jellycontrol/refs/heads/main/jellyfin_control/static/assets/custom_logo.png"
+                    alt="Site Logo" class="logo">
             </a>
         </header>
         <span class="toggle-btn" id="toggle-btn">☰</span>
         <ul class="uk-nav uk-nav-default">
             {% if user.is_authenticated %}
-            {% if is_superuser %}
-            <li><a href="{% url 'view_users' %}"><span uk-icon="icon: users"></span> <span class="text">Users</span></a>
+            {% if user.is_superuser %}
+            <li class="{% if request.path == '/users/' %}uk-active{% endif %}">
+                <a href="{% url 'view_users' %}"><span uk-icon="icon: users"></span> <span class="text">Users</span></a>
             </li>
-            <li><a href="{% url 'settings' %}"><span uk-icon="icon: settings"></span> <span
-                        class="text">Settings</span></a></li>
-            <li><a href="{% url 'view_devices' %}"><span uk-icon="icon: desktop"></span> <span
-                        class="text">Devices</span></a></li>
-            <li><a href="{% url 'sessions_page' %}"><span uk-icon="icon: tv"></span> <span
-                        class="text">Sessions</span></a></li>
-            <li><a href="{% url 'logs' %}"><span uk-icon="icon: file-text"></span> <span class="text">Logs</span></a>
+            <li class="{% if request.path == '/settings/' %}uk-active{% endif %}">
+                <a href="{% url 'settings' %}"><span uk-icon="icon: settings"></span> <span
+                        class="text">Settings</span></a>
+            </li>
+            <li class="{% if request.path == '/devices/' %}uk-active{% endif %}">
+                <a href="{% url 'view_devices' %}"><span uk-icon="icon: desktop"></span> <span
+                        class="text">Devices</span></a>
+            </li>
+            <li class="{% if request.path == '/sessions/' %}uk-active{% endif %}">
+                <a href="{% url 'sessions_page' %}"><span uk-icon="icon: tv"></span> <span
+                        class="text">Sessions</span></a>
+            </li>
+            <li class="{% if request.path == '/logs/' %}uk-active{% endif %}">
+                <a href="{% url 'logs' %}"><span uk-icon="icon: file-text"></span> <span class="text">Logs</span></a>
             </li>
             {% endif %}
-            <li><a href="{% url 'invitation_list' %}"><span uk-icon="icon: social"></span> <span
-                        class="text">Invites</span></a></li>
-            <li><a href="{% url 'movie_list' %}"><span uk-icon="icon: video-camera"></span> <span
-                        class="text">Movies</span></a></li>
-            <li><a href="{% url 'series_list' %}"><span uk-icon="icon: video-camera"></span> <span
-                        class="text">TV Shows</span></a></li>
-            <li><a href="{% url 'logout' %}"><span uk-icon="icon: sign-out"></span> <span class="text">Logout</span></a>
+            <li class="{% if request.path == '/invitations/' %}uk-active{% endif %}">
+                <a href="{% url 'invitation_list' %}"><span uk-icon="icon: social"></span> <span
+                        class="text">Invites</span></a>
+            </li>
+            <li class="{% if request.path == '/movies/' %}uk-active{% endif %}">
+                <a href="{% url 'movie_list' %}"><span uk-icon="icon: video-camera"></span> <span
+                        class="text">Movies</span></a>
+            </li>
+            <li class="{% if request.path == '/tv-shows/' %}uk-active{% endif %}">
+                <a href="{% url 'series_list' %}"><span uk-icon="icon: video-camera"></span> <span class="text">TV
+                        Shows</span></a>
+            </li>
+            <li class="{% if request.path == '/logout/' %}uk-active{% endif %}">
+                <a href="{% url 'logout' %}"><span uk-icon="icon: sign-out"></span> <span class="text">Logout</span></a>
             </li>
             {% else %}
-            <li><a href="{% url 'login' %}"><span uk-icon="icon: sign-in"></span> <span class="text">Login</span></a>
+            <li class="{% if request.path == '/accounts/login/' %}uk-active{% endif %}">
+                <a href="{% url 'login' %}"><span uk-icon="icon: sign-in"></span> <span class="text">Login</span></a>
             </li>
-            <li><a href="{% url 'enter_invite' %}"><span uk-icon="icon: plus-circle"></span> <span class="text">Sign
-                        Up</span></a></li>
+            <li class="{% if request.path == '/register/' %}uk-active{% endif %}">
+                <a href="{% url 'enter_invite' %}"><span uk-icon="icon: plus-circle"></span> <span class="text">Sign
+                        Up</span></a>
+            </li>
+
+
             {% endif %}
         </ul>
-        {% if user.is_authenticated %}
-        {% endif %}
     </div>
+
+
+
 
     <div class="content" id="content">
         <div class="uk-container uk-margin-top">

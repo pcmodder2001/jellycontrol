@@ -33,7 +33,7 @@ LICENSING_SERVER_URL = 'http://192.168.0.93:8001/licenses'  # replace with actua
 SECRET_KEY = 'django-insecure-@1*ll#bwr*=jji#cqp15gpf4+5q8gftfh$5ul92ms(@%$bi-d$'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -98,6 +98,8 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'jellyfin_control.context_processors.is_superuser',  # Add this line
                 'jellyfin_control.context_processors.user_info',
+                'jellyfin_control.context_processors.check_default_invite',
+
             ],
         },
     },
