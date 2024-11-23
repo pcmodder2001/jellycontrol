@@ -1,3 +1,4 @@
+import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
@@ -26,6 +27,9 @@ from django.utils.http import urlsafe_base64_decode
 from packaging import version  # To handle version comparison
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
+from django.http import FileResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.core.management import call_command
 
 
 
@@ -1295,7 +1299,86 @@ def settings_view(request):
             'license': license_instance,
         })
 
-    
+@login_required
+@superuser_required
+def download_database(request):
+    db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'db.sqlite3')
+    try:
+        if os.path.exists(db_path):
+            # Log the successful download action
+            LogEntry.objects.create(
+                action='DOWNLOAD',
+                user=request.user,
+                message=f"Database downloaded successfully."
+            )
+            response = FileResponse(open(db_path, 'rb'), as_attachment=True, filename='db.sqlite3')
+            return response
+        else:
+            messages.error(request, "Database file not found.")
+            # Log the error when the file is not found
+            LogEntry.objects.create(
+                action='ERROR',
+                user=request.user,
+                message="Database file not found."
+            )
+            return redirect('settings')
+    except Exception as e:
+        messages.error(request, f"Error while downloading database: {str(e)}")
+        # Log the error that occurred during download
+        LogEntry.objects.create(
+            action='ERROR',
+            user=request.user,
+            message=f"Failed to download database: {str(e)}"
+        )
+        return redirect('settings')
+
+
+@csrf_exempt
+@login_required
+@superuser_required
+def upload_database(request):
+    if request.method == 'POST' and 'database' in request.FILES:
+        db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'db.sqlite3')
+        uploaded_file = request.FILES['database']
+
+        try:
+            # Save the uploaded database
+            with open(db_path, 'wb') as f:
+                for chunk in uploaded_file.chunks():
+                    f.write(chunk)
+
+            # Run migrations after successful upload
+            call_command('makemigrations')  # Create migration files (optional, depending on your setup)
+            call_command('migrate')  # Apply migrations
+
+            messages.success(request, "Database uploaded and migrations applied successfully.")
+
+            # Log the successful upload and migration application
+            LogEntry.objects.create(
+                action='UPLOAD',
+                user=request.user,
+                message="Database uploaded and migrations applied successfully."
+            )
+
+        except Exception as e:
+            messages.error(request, f"Migration failed: {str(e)}")
+            # Log the error that occurred during the upload and migration
+            LogEntry.objects.create(
+                action='ERROR',
+                user=request.user,
+                message=f"Failed to upload database: {str(e)}"
+            )
+
+        return redirect('settings')  # Replace 'settings' with the name of the page to redirect to
+
+    messages.error(request, "Invalid request.")
+    # Log the invalid request
+    LogEntry.objects.create(
+        action='ERROR',
+        user=request.user,
+        message="Invalid request for database upload."
+    )
+    return redirect('settings')  # Replace 'settings' with the name of the page to redirect to
 
 @login_required
 @superuser_required

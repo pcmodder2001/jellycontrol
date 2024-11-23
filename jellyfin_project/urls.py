@@ -62,6 +62,11 @@ urlpatterns = [
     path('update-is-disabled/', views.update_is_disabled, name='update_is_disabled'),
     path('jellyseer/requests/', views.list_requests, name='jellyseer_requests'),
     path('create-default-invite/', views.create_invitation, name='create_invitation'),
+    path('download-db/', views.download_database, name='download_database'),
+    path('upload-db/', views.upload_database, name='upload_database'),
+
+
+
 
 ]
 

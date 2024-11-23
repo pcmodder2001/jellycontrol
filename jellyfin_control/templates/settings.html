@@ -7,12 +7,11 @@
     <!-- Main Heading -->
     <h1 class="uk-heading-line uk-text-center" style="width: 100%; padding-bottom: 20px;">
         <span>Application Settings</span>
-    </h1>   
+    </h1>
 
     <!-- Settings Form -->
-    <div class="uk-grid uk-grid-large uk-child-width-1-2@s uk-flex-center" uk-grid>
-        <!-- Config Form -->
-        <div>
+    <div class="uk-grid uk-grid-large uk-flex-center" uk-grid>
+        <div class="uk-width-1-2@s">
             <form method="post" action="{% url 'settings' %}" class="uk-form-stacked uk-box-shadow-small uk-padding uk-background-muted" style="border-radius: 10px;">
                 {% csrf_token %}
                 
@@ -34,8 +33,6 @@
                     </div>
                 </div>
                 
-
-
                 <div class="uk-margin">
                     <label class="uk-form-label" for="jellyfin_api_key">Jellyfin API Key:</label>
                     <div class="uk-form-controls uk-flex">
@@ -73,19 +70,46 @@
                     </div>
                 </div>
 
+                <!-- Action Buttons -->
                 <button 
                     class="uk-button uk-button-primary uk-width-1-1 uk-margin-top" 
                     type="submit"
                 >
                     Save Configuration
                 </button>
+                <a href="{% url 'download_database' %}" class="uk-button uk-button-secondary uk-width-1-1" style="margin-top: 5px;">
+                    Download Database
+                </a>
+                <button 
+                    class="uk-button uk-button-default uk-width-1-1 uk-margin-top" 
+                    type="button" 
+                    uk-toggle="target: #upload-database-modal"
+                >
+                    Upload Database
+                </button>
             </form>
         </div>
     </div>
 </div>
 
-<!-- JavaScript for handling the API key generation request -->
+<!-- Modal for Uploading Database -->
+<div id="upload-database-modal" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body uk-background-muted" style="border-radius: 10px;">
+        <h3 class="uk-heading-line uk-text-center"><span>Upload Database</span></h3>
+        <p>Upload a database file to replace the current one. Please proceed with caution as this action will overwrite the existing database.</p>
+        <form method="post" enctype="multipart/form-data" action="{% url 'upload_database' %}">
+            {% csrf_token %}
+            <input type="file" name="database" required class="uk-input uk-margin-bottom">
+            <div class="uk-flex uk-flex-between">
+                <button class="uk-button uk-button-primary" type="submit">Upload</button>
+                <button class="uk-button uk-button-secondary" type="button" uk-toggle="target: #upload-database-modal">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+// JavaScript for generating API Key
 document.getElementById('generate-api-key-btn').addEventListener('click', function() {
     const csrfToken = '{{ csrf_token }}';
     const apiKeyStatus = document.getElementById('api-key-status');

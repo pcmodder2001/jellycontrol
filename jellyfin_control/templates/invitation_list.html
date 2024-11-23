@@ -11,11 +11,11 @@
             <a href="{% url 'invitation_create' %}" class="uk-button uk-button-primary uk-button-large uk-border-rounded">
                 <span uk-icon="icon: plus-circle" style="margin-right: 10px;"></span> Create Invite
             </a>
-            {% if not default_invite_exists %}
+            {% if not default_invite_exists and user.is_superuser %}
             <button id="create-default-invite" class="uk-button uk-button-secondary uk-button-large uk-border-rounded">
                 <span uk-icon="icon: bolt" style="margin-right: 10px;"></span> Create Default Invite
             </button>
-            {% endif %}
+        {% endif %}
         </div>
     </div>
 
