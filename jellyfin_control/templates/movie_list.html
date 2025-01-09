@@ -1,107 +1,478 @@
 {% extends 'base.html' %}
-{% load static %}
+
 {% block title %}Movies{% endblock %}
 
 {% block content %}
-<div class="uk-container uk-margin-large-top uk-margin-large-bottom">
-    <h1 class="uk-heading-line uk-text-center"><span>All Movies</span></h1>
-    
-    <div class="uk-margin-bottom">
-        <input type="text" id="searchInput" class="uk-input" placeholder="Search movies...">
-    </div>
-    
-    <div class="uk-grid uk-child-width-1-4@m uk-child-width-1-2@s uk-flex-center" uk-grid id="movieContainer">
-        {% for movie in page_obj %}
-        <div class="movie-card">
-            <a href="{% url 'movie_detail' movie.Id %}">
-                <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded card-fixed-height">
-                    {% if movie.ImageTags.Primary %}
-                        <img src="{{ config.server_url }}Items/{{ movie.Id }}/Images/Primary?tag={{ movie.ImageTags.Primary }}&quality=90&maxWidth=300" 
-                             alt="{{ movie.Name }}" class="uk-margin-small-bottom uk-width-1-1">
-                    {% else %}
-                        <img src="{% static 'images/no-image.png' %}" alt="No image available" class="uk-margin-small-bottom uk-width-1-1">
-                    {% endif %}
-                    <h3 class="uk-card-title uk-text-center">{{ movie.Name }}</h3>
-                    <p class="uk-text-center">{{ movie.ProductionYear }}</p>
+{% csrf_token %}
+<div class="uk-container uk-container-expand uk-margin-medium-top" style="background: transparent;">
+    <!-- Navigation Pills -->
+    <ul class="uk-subnav uk-subnav-pill uk-flex-center uk-margin-medium-bottom">
+        <li class="uk-active"><a href="#">All Movies</a></li>
+        <li><a href="#">Search Movies</a></li>
+    </ul>
+
+    <!-- Content Sections -->
+    <div>
+        <!-- All Movies Section -->
+        <div>
+            <!-- Search Input -->
+            <div class="uk-margin-large-bottom uk-flex uk-flex-center">
+                <div class="uk-inline uk-width-1-3@m">
+                    <span class="uk-form-icon" uk-icon="search"></span>
+                    <input class="uk-input uk-form-large" 
+                           id="movie-search" 
+                           type="text" 
+                           placeholder="Search movies..." 
+                           aria-label="Search movies">
+                    <div id="search-status" class="uk-text-small uk-text-muted uk-margin-small-top" style="display: none;">
+                        Searching...
+                    </div>
                 </div>
-            </a>
-        </div>
-        {% empty %}
-        <p class="uk-text-center">No movies available.</p>
-        {% endfor %}
-    </div>
+            </div>
 
-    <!-- Pagination -->
-    <div class="uk-flex uk-flex-center uk-margin-large-top">
-        <ul class="uk-pagination uk-flex-center" uk-margin>
-            {% if page_obj.has_previous %}
-                <li>
-                    <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                </li>
-            {% else %}
-                <li class="uk-disabled">
-                    <span>Previous</span>
-                </li>
-            {% endif %}
+            <!-- Movie Grid -->
+            <div class="uk-grid uk-grid-small uk-child-width-1-2@s uk-child-width-1-4@m uk-child-width-1-8@xl" uk-grid>
+                {% for movie in page_obj %}
+                <div class="movie-card" data-title="{{ movie.Name|lower }}">
+                    <div class="uk-inline uk-width-1-1 movie-container">
+                        {% if movie.ImageTags.Primary %}
+                        <img src="{{ config.server_url }}Items/{{ movie.Id }}/Images/Primary?tag={{ movie.ImageTags.Primary }}"
+                             alt="{{ movie.Name }}" 
+                             class="movie-poster">
+                        <div class="jellyfin-indicator">
+                            <span uk-icon="icon: check" class="uk-icon-button uk-button-primary"></span>
+                        </div>
+                        {% else %}
+                        <div class="uk-height-medium uk-background-muted uk-flex uk-flex-center uk-flex-middle">
+                            <span uk-icon="icon: image; ratio: 3"></span>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Overlay -->
+                        <div class="movie-overlay uk-overlay-primary uk-position-cover uk-transition-fade">
+                            <div class="uk-position-center uk-text-center">
+                                <h4 class="uk-margin-small-bottom uk-text-small">{{ movie.Name }}</h4>
+                                <p class="uk-margin-remove uk-text-small">{{ movie.ProductionYear }}</p>
+                                <a href="{% url 'movie_detail' movie.Id %}" 
+                                   class="uk-button uk-button-primary uk-button-small uk-margin-small-top">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
 
-            {% for num in page_obj.paginator.page_range %}
-                {% if page_obj.number == num %}
+            <!-- Pagination -->
+            {% if page_obj.paginator.num_pages > 1 %}
+            <div class="uk-margin-large-top">
+                <ul class="uk-pagination uk-flex-center">
+                    {% if page_obj.has_previous %}
+                    <li><a href="?page=1"><span uk-pagination-previous></span><span uk-pagination-previous></span></a></li>
+                    <li><a href="?page={{ page_obj.previous_page_number }}"><span uk-pagination-previous></span></a></li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
                     <li class="uk-active"><span>{{ num }}</span></li>
-                {% else %}
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                     <li><a href="?page={{ num }}">{{ num }}</a></li>
-                {% endif %}
-            {% endfor %}
+                    {% endif %}
+                    {% endfor %}
 
-            {% if page_obj.has_next %}
-                <li>
-                    <a href="?page={{ page_obj.next_page_number }}">Next</a>
-                </li>
-            {% else %}
-                <li class="uk-disabled">
-                    <span>Next</span>
-                </li>
+                    {% if page_obj.has_next %}
+                    <li><a href="?page={{ page_obj.next_page_number }}"><span uk-pagination-next></span></a></li>
+                    <li><a href="?page={{ page_obj.paginator.num_pages }}"><span uk-pagination-next></span><span uk-pagination-next></span></a></li>
+                    {% endif %}
+                </ul>
+
+                <div class="uk-text-center uk-text-small uk-text-muted">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    ({{ page_obj.paginator.count }} total movies)
+                </div>
+            </div>
             {% endif %}
-        </ul>
+        </div>
     </div>
 </div>
 
+<style>
+    /* Update container styles */
+    .uk-container-expand {
+        padding-left: 30px !important;
+        padding-right: 30px !important;
+        max-width: none;
+    }
+
+    /* Update movie container styles */
+    .movie-container {
+        position: relative;
+        padding-top: 150%; /* 2:3 aspect ratio */
+        overflow: hidden;
+        margin-bottom: 15px;
+    }
+
+    /* Reduce grid gap */
+    .uk-grid-small {
+        margin-left: -8px;
+    }
+    .uk-grid-small > * {
+        padding-left: 8px;
+    }
+
+    /* Style the search input */
+    .uk-form-large {
+        border-radius: 8px;
+        font-size: 1.1rem;
+    }
+
+    /* Style the navigation pills */
+    .uk-subnav-pill {
+        margin-bottom: 40px;
+    }
+
+    .uk-subnav-pill > * > :first-child {
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+
+    .uk-subnav-pill > .uk-active > a {
+        background: linear-gradient(45deg, #77b1ef, #3b009b);
+    }
+
+    /* Responsive adjustments */
+    @media (min-width: 1600px) {
+        .uk-child-width-1-8\@xl > * {
+            width: 12.5%;
+        }
+    }
+
+    @media (min-width: 2000px) {
+        .uk-child-width-1-9\@xl > * {
+            width: 11.11%;
+        }
+    }
+
+    /* Movie poster hover effect */
+    .movie-poster {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .movie-card:hover .movie-poster {
+        transform: scale(1.05);
+    }
+
+    .movie-overlay {
+        opacity: 0;
+        background: rgba(0,0,0,0.8);
+        transition: all 0.3s ease;
+    }
+
+    .movie-card:hover .movie-overlay {
+        opacity: 1;
+    }
+
+    .jellyfin-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1;
+    }
+
+    .jellyfin-indicator .uk-icon-button {
+        background-color: rgba(40, 167, 69, 0.8);  /* Bootstrap success green with opacity */
+        color: white;
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+    }
+
+    /* Updated SweetAlert2 Dark Mode Customization */
+    [data-theme='dark'] .swal2-popup {
+        background-color: #1a1a1a !important;
+        color: #fff !important;
+    }
+
+    [data-theme='dark'] .swal2-title,
+    [data-theme='dark'] .swal2-html-container,
+    [data-theme='dark'] .swal2-content {
+        color: #fff !important;
+    }
+
+    [data-theme='dark'] .swal2-icon {
+        border-color: #fff !important;
+        color: #fff !important;
+    }
+
+    [data-theme='dark'] .swal2-icon.swal2-question {
+        border-color: #87adbd !important;
+        color: #87adbd !important;
+    }
+
+    [data-theme='dark'] .swal2-icon.swal2-success {
+        border-color: #28a745 !important;
+        color: #28a745 !important;
+    }
+
+    [data-theme='dark'] .swal2-icon.swal2-error {
+        border-color: #dc3545 !important;
+        color: #dc3545 !important;
+    }
+
+    /* Light mode styles */
+    [data-theme='light'] .swal2-popup {
+        background-color: #fff !important;
+        color: #545454 !important;
+    }
+
+    /* Common button styles */
+    .swal2-confirm {
+        background-color: #28a745 !important;
+        color: #fff !important;
+    }
+
+    .swal2-cancel {
+        background-color: #dc3545 !important;
+        color: #fff !important;
+    }
+
+    /* Smooth transitions */
+    .swal2-popup,
+    .swal2-title,
+    .swal2-content,
+    .swal2-html-container,
+    .swal2-icon {
+        transition: all 0.3s ease !important;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var searchInput = document.getElementById('searchInput');
-        var movieContainer = document.getElementById('movieContainer');
+let searchTimeout;
+const searchStatus = document.getElementById('search-status');
+const movieContainer = document.querySelector('.uk-grid.uk-grid-small');
+const paginationContainer = document.querySelector('.uk-margin-large-top');
 
-        var allMovies = JSON.parse('{{ all_movies|escapejs }}');
-        var serverUrl = "{{ config.server_url|escapejs }}";
+console.log('Movie container found:', movieContainer);
+console.log('Current URL:', window.location.href);
 
-        searchInput.addEventListener('keyup', function() {
-            var filter = searchInput.value.toLowerCase();
-            var filteredMovies = allMovies.filter(function(movie) {
-                return movie.Name.toLowerCase().includes(filter);
-            });
+function getCsrfToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+}
 
-            movieContainer.innerHTML = '';
-
-            filteredMovies.forEach(function(movie) {
-                var cardHTML = `
-                    <div class="movie-card">
-                        <a href="${window.location.origin}/movies/${movie.Id}/">
-                            <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded card-fixed-height">
-                                ${movie.ImageTags.Primary ? 
-                                    `<img src="${serverUrl}Items/${movie.Id}/Images/Primary?tag=${movie.ImageTags.Primary}&quality=90&maxWidth=300" 
-                                         alt="${movie.Name}" class="uk-margin-small-bottom uk-width-1-1">` 
-                                    : 
-                                    `<img src="{% static 'images/no-image.png' %}" alt="No image available" class="uk-margin-small-bottom uk-width-1-1">`
-                                }
-                                <h3 class="uk-card-title uk-text-center">${movie.Name}</h3>
-                                <p class="uk-text-center">${movie.ProductionYear}</p>
-                            </div>
-                        </a>
-                    </div>
-                `;
-                movieContainer.insertAdjacentHTML('beforeend', cardHTML);
-            });
-        });
+function showError(message) {
+    UIkit.notification({
+        message: message,
+        status: 'danger',
+        pos: 'top-center',
+        timeout: 5000
     });
-</script>
+}
 
+function performSearch() {
+    console.log('Performing search...');
+    const searchInput = document.getElementById('movie-search');
+    const searchTerm = searchInput.value.trim();  // Trim whitespace
+    
+    searchStatus.style.display = 'block';
+    searchStatus.textContent = 'Searching...';
+
+    // If search is empty, reload the page to show all movies
+    if (!searchTerm) {
+        window.location.href = window.location.pathname;
+        return;
+    }
+
+    console.log('Search term:', searchTerm);
+    console.log('Request URL:', `${window.location.pathname}?search=${encodeURIComponent(searchTerm)}`);
+
+    fetch(`${window.location.pathname}?search=${encodeURIComponent(searchTerm)}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers));
+        
+        if (response.redirected) {
+            console.log('Redirect detected to:', response.url);
+            window.location.href = response.url;
+            throw new Error('Redirect detected');
+        }
+        
+        if (!response.ok) {
+            if (response.status === 302) {
+                throw new Error('Session expired');
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        movieContainer.innerHTML = data.html;
+        searchStatus.style.display = 'none';
+
+        const url = new URL(window.location);
+        if (searchTerm) {
+            url.searchParams.set('search', searchTerm);
+        } else {
+            url.searchParams.delete('search');
+        }
+        window.history.pushState({}, '', url);
+    })
+    .catch(error => {
+        console.error('Search error:', error);
+        console.error('Error stack:', error.stack);
+        searchStatus.style.display = 'none';
+        
+        if (error.message.includes('Session expired')) {
+            showError('Session expired. Redirecting to login...');
+            setTimeout(() => window.location.href = '/login/', 2000);
+        } else {
+            showError(`Error: ${error.message}`);
+        }
+    });
+}
+
+// Debounced search input handler
+document.getElementById('movie-search').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(performSearch, 300);
+});
+
+// Initialize with URL parameters
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchTerm = urlParams.get('search');
+    if (searchTerm) {
+        const searchInput = document.getElementById('movie-search');
+        searchInput.value = searchTerm;
+        performSearch();
+    }
+});
+
+// Add this function to detect dark mode and watch for changes
+function setupThemeDetection() {
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    function isDarkMode() {
+        return darkModeMediaQuery.matches;
+    }
+
+    // Update SweetAlert2 theme when system theme changes
+    darkModeMediaQuery.addEventListener('change', (e) => {
+        document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+    });
+
+    // Set initial theme
+    document.documentElement.setAttribute('data-theme', isDarkMode() ? 'dark' : 'light');
+    
+    return isDarkMode;
+}
+
+const isDarkMode = setupThemeDetection();
+
+// Update the requestMovie function
+function requestMovie(tmdbId, movieTitle) {
+    const theme = isDarkMode() ? 'dark' : 'light';
+    
+    Swal.fire({
+        title: 'Request Movie',
+        html: `Do you want to request <strong>${movieTitle}</strong>?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, request it!',
+        cancelButtonText: 'No, cancel',
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#dc3545',
+        background: isDarkMode() ? '#1a1a1a' : '#fff',
+        color: isDarkMode() ? '#fff' : '#545454',
+        customClass: {
+            popup: `swal2-${theme}`,
+            title: `swal2-title-${theme}`,
+            htmlContainer: `swal2-html-${theme}`,
+            confirmButton: 'swal2-confirm',
+            cancelButton: 'swal2-cancel',
+            actions: `swal2-actions-${theme}`,
+            icon: `swal2-icon-${theme}`
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const requestData = {
+                mediaType: "movie",
+                mediaId: parseInt(tmdbId),
+                tvdbId: 0,
+                seasons: [],
+                is4k: false,
+                serverId: 0,
+                profileId: 0,
+                rootFolder: "",
+                languageProfileId: 0,
+                userId: 0
+            };
+
+            fetch('/proxy/jellyseerr/request/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.details || data.error || 'Request failed');
+                }
+                return data;
+            })
+            .then(data => {
+                Swal.fire({
+                    title: 'Requested!',
+                    text: `${movieTitle} has been requested successfully.`,
+                    icon: 'success',
+                    background: isDarkMode() ? '#1a1a1a' : '#fff',
+                    color: isDarkMode() ? '#fff' : '#545454',
+                    customClass: {
+                        popup: `swal2-${theme}`,
+                        title: `swal2-title-${theme}`,
+                        htmlContainer: `swal2-html-${theme}`
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Request error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: error.message || 'Failed to submit request. Please try again later.',
+                    icon: 'error',
+                    background: isDarkMode() ? '#1a1a1a' : '#fff',
+                    color: isDarkMode() ? '#fff' : '#545454',
+                    customClass: {
+                        popup: `swal2-${theme}`,
+                        title: `swal2-title-${theme}`,
+                        htmlContainer: `swal2-html-${theme}`
+                    }
+                });
+            });
+        }
+    });
+}
+</script>
 {% endblock %}

@@ -1,0 +1,170 @@
+<!-- Just the movie grid part of your movie_list.html -->
+{% for movie in movies %}
+<div class="movie-card" data-title="{{ movie.Name|lower }}">
+    <div class="uk-inline uk-width-1-1 movie-container">
+        {% if movie.IsFromTMDB %}
+            {% if movie.PosterPath %}
+            <img src="{{ tmdb_base_url }}{{ movie.PosterPath }}"
+                 alt="{{ movie.Name }}" 
+                 class="movie-poster">
+            <div class="tmdb-indicator">
+                <span uk-icon="icon: close" class="uk-icon-button uk-button-danger"></span>
+            </div>
+            <div class="request-button uk-flex uk-flex-center">
+                <button onclick="requestMovie('{{ movie.TMDBId }}', '{{ movie.Name|escapejs }}')" 
+                        class="uk-button uk-button-small uk-button-primary">
+                    Request Movie
+                </button>
+            </div>
+            {% else %}
+            <div class="uk-height-medium uk-background-muted uk-flex uk-flex-center uk-flex-middle">
+                <span uk-icon="icon: image; ratio: 3"></span>
+            </div>
+            {% endif %}
+        {% else %}
+            {% if movie.ImageTags.Primary %}
+            <img src="{{ config.server_url }}Items/{{ movie.Id }}/Images/Primary?tag={{ movie.ImageTags.Primary }}"
+                 alt="{{ movie.Name }}" 
+                 class="movie-poster">
+            <div class="jellyfin-indicator">
+                <span uk-icon="icon: check" class="uk-icon-button uk-button-primary"></span>
+            </div>
+            {% else %}
+            <div class="uk-height-medium uk-background-muted uk-flex uk-flex-center uk-flex-middle">
+                <span uk-icon="icon: image; ratio: 3"></span>
+            </div>
+            {% endif %}
+        {% endif %}
+        
+        <!-- Overlay -->
+        <div class="movie-overlay uk-overlay-primary uk-position-cover uk-transition-fade">
+            <div class="uk-position-center uk-text-center">
+                <h4 class="uk-margin-small-bottom uk-text-small">{{ movie.Name }}</h4>
+                <p class="uk-margin-remove uk-text-small">{{ movie.ProductionYear }}</p>
+                {% if not movie.IsFromTMDB %}
+                <a href="{% url 'movie_detail' movie.Id %}" 
+                   class="uk-button uk-button-primary uk-button-small uk-margin-small-top">
+                    View Details
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<style>
+.tmdb-indicator, .jellyfin-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+}
+
+.tmdb-indicator .uk-icon-button {
+    background-color: rgba(255, 0, 0, 0.8);
+    color: white;
+}
+
+.jellyfin-indicator .uk-icon-button {
+    background-color: rgba(40, 167, 69, 0.8);  /* Bootstrap success green with opacity */
+    color: white;
+}
+
+.movie-container {
+    position: relative;
+}
+
+.uk-icon-button {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+}
+
+.request-button {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 0 10px;
+}
+
+.movie-card:hover .request-button {
+    opacity: 1;
+}
+
+.request-button .uk-button-primary {
+    background-color: rgba(40, 167, 69, 0.9);
+    color: white;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    padding: 2px 15px;
+    width: auto;
+    margin: 0 auto;
+}
+</style> 
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function requestMovie(tmdbId, movieTitle) {
+    Swal.fire({
+        title: 'Request Movie',
+        html: `Do you want to request <strong>${movieTitle}</strong>?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, request it!',
+        cancelButtonText: 'No, cancel',
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#dc3545'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Make the request to Jellyseerr
+            const requestData = {
+                mediaType: "movie",
+                mediaId: parseInt(tmdbId),
+                tvdbId: null,
+                seasons: [],
+                is4k: false,
+                serverId: 0,
+                profileId: 0,
+                rootFolder: "",
+                languageProfileId: 0,
+                userId: 0
+            };
+
+            fetch('{{ config.jellyseerr_url }}/api/v1/request', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Add any required authentication headers here
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Request failed');
+                }
+                return response.json();
+            })
+            .then(data => {
+                Swal.fire(
+                    'Requested!',
+                    `${movieTitle} has been requested successfully.`,
+                    'success'
+                );
+            })
+            .catch(error => {
+                Swal.fire(
+                    'Error!',
+                    'Failed to submit request. Please try again later.',
+                    'error'
+                );
+                console.error('Request error:', error);
+            });
+        }
+    });
+}
+</script> 

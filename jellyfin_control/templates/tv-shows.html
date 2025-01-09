@@ -1,107 +1,269 @@
 {% extends 'base.html' %}
-{% load static %}
-{% block title %}Movies{% endblock %}
+
+{% block title %}TV Shows{% endblock %}
 
 {% block content %}
-<div class="uk-container uk-margin-large-top uk-margin-large-bottom">
-    <h1 class="uk-heading-line uk-text-center"><span>All TV-Shows</span></h1>
-    
-    <div class="uk-margin-bottom">
-        <input type="text" id="searchInput" class="uk-input" placeholder="Search movies...">
-    </div>
-    
-    <div class="uk-grid uk-child-width-1-4@m uk-child-width-1-2@s uk-flex-center" uk-grid id="movieContainer">
-        {% for movie in page_obj %}
-        <div class="movie-card">
-            <a href="{% url 'series-detail' movie.Id %}">
-                <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded card-fixed-height">
-                    {% if movie.ImageTags.Primary %}
-                        <img src="{{ config.server_url }}Items/{{ movie.Id }}/Images/Primary?tag={{ movie.ImageTags.Primary }}&quality=90&maxWidth=300" 
-                             alt="{{ movie.Name }}" class="uk-margin-small-bottom uk-width-1-1">
-                    {% else %}
-                        <img src="{% static 'images/no-image.png' %}" alt="No image available" class="uk-margin-small-bottom uk-width-1-1">
-                    {% endif %}
-                    <h3 class="uk-card-title uk-text-center">{{ movie.Name }}</h3>
-                    <p class="uk-text-center">{{ movie.ProductionYear }}</p>
+{% csrf_token %}
+<div class="uk-container uk-container-expand uk-margin-medium-top" style="background: transparent;">
+    <!-- Navigation Pills -->
+    <ul class="uk-subnav uk-subnav-pill uk-flex-center uk-margin-medium-bottom">
+        <li class="{% if not search_tmdb %}uk-active{% endif %}"><a href="{% url 'series_list' %}">Available Shows</a></li>
+        <li class="{% if search_tmdb %}uk-active{% endif %}"><a href="?search_tmdb=true">Search All Shows</a></li>
+    </ul>
+
+    <!-- Content Sections -->
+    <div>
+        <!-- Search Input -->
+        <div class="uk-margin-large-bottom uk-flex uk-flex-center">
+            <div class="uk-inline uk-width-1-3@m">
+                <span class="uk-form-icon" uk-icon="search"></span>
+                <input class="uk-input uk-form-large" 
+                       id="show-search" 
+                       type="text" 
+                       placeholder="Search TV shows..." 
+                       aria-label="Search TV shows"
+                       value="{{ search_query }}">
+                <div id="search-status" class="uk-text-small uk-text-muted uk-margin-small-top" style="display: none;">
+                    Searching...
                 </div>
-            </a>
+            </div>
         </div>
-        {% empty %}
-        <p class="uk-text-center">No movies available.</p>
-        {% endfor %}
-    </div>
 
-    <!-- Pagination -->
-    <div class="uk-flex uk-flex-center uk-margin-large-top">
-        <ul class="uk-pagination uk-flex-center" uk-margin>
-            {% if page_obj.has_previous %}
-                <li>
-                    <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                </li>
-            {% else %}
-                <li class="uk-disabled">
-                    <span>Previous</span>
-                </li>
-            {% endif %}
-
-            {% for num in page_obj.paginator.page_range %}
-                {% if page_obj.number == num %}
-                    <li class="uk-active"><span>{{ num }}</span></li>
-                {% else %}
-                    <li><a href="?page={{ num }}">{{ num }}</a></li>
-                {% endif %}
+        <!-- TV Shows Grid -->
+        <div class="uk-grid uk-grid-small uk-child-width-1-2@s uk-child-width-1-4@m uk-child-width-1-8@xl" uk-grid id="showContainer">
+            {% for show in page_obj %}
+            <div class="movie-card" data-title="{{ show.Name|lower }}">
+                <div class="uk-inline uk-width-1-1 movie-container">
+                    {% if show.IsFromTMDB %}
+                        {% if show.PosterPath %}
+                        <img src="{{ tmdb_base_url }}{{ show.PosterPath }}"
+                             alt="{{ show.Name }}" 
+                             class="movie-poster">
+                        <div class="tmdb-indicator">
+                            <span uk-icon="icon: close" class="uk-icon-button uk-button-danger"></span>
+                        </div>
+                        <div class="request-button uk-flex uk-flex-center">
+                            <button onclick="requestShow('{{ show.TMDBId }}', '{{ show.Name|escapejs }}')" 
+                                    class="uk-button uk-button-small uk-button-primary">
+                                Request Show
+                            </button>
+                        </div>
+                        {% else %}
+                        <div class="uk-height-medium uk-background-muted uk-flex uk-flex-center uk-flex-middle">
+                            <span uk-icon="icon: image; ratio: 3"></span>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        {% if show.ImageTags.Primary %}
+                        <img src="{{ config.server_url }}Items/{{ show.Id }}/Images/Primary?tag={{ show.ImageTags.Primary }}"
+                             alt="{{ show.Name }}" 
+                             class="movie-poster">
+                        <div class="jellyfin-indicator">
+                            <span uk-icon="icon: check" class="uk-icon-button uk-button-primary"></span>
+                        </div>
+                        {% else %}
+                        <div class="uk-height-medium uk-background-muted uk-flex uk-flex-center uk-flex-middle">
+                            <span uk-icon="icon: image; ratio: 3"></span>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                    
+                    <!-- Overlay -->
+                    <div class="movie-overlay uk-overlay-primary uk-position-cover uk-transition-fade">
+                        <div class="uk-position-center uk-text-center">
+                            <h4 class="uk-margin-small-bottom uk-text-small">{{ show.Name }}</h4>
+                            <p class="uk-margin-remove uk-text-small">{{ show.ProductionYear }}</p>
+                            {% if not show.IsFromTMDB %}
+                            <a href="{% url 'series-detail' show.Id %}" 
+                               class="uk-button uk-button-primary uk-button-small uk-margin-small-top">
+                                View Details
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="uk-width-1-1 uk-text-center">
+                <p class="uk-text-muted">No TV shows found.</p>
+            </div>
             {% endfor %}
+        </div>
 
-            {% if page_obj.has_next %}
-                <li>
-                    <a href="?page={{ page_obj.next_page_number }}">Next</a>
-                </li>
-            {% else %}
-                <li class="uk-disabled">
-                    <span>Next</span>
-                </li>
-            {% endif %}
-        </ul>
+        <!-- Pagination -->
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="uk-margin-large-top">
+            <ul class="uk-pagination uk-flex-center">
+                {% if page_obj.has_previous %}
+                <li><a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if search_tmdb %}&search_tmdb=true{% endif %}"><span uk-pagination-previous></span></a></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="uk-active"><span>{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li><a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if search_tmdb %}&search_tmdb=true{% endif %}">{{ num }}</a></li>
+                {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li><a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if search_tmdb %}&search_tmdb=true{% endif %}"><span uk-pagination-next></span></a></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
     </div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var searchInput = document.getElementById('searchInput');
-        var movieContainer = document.getElementById('movieContainer');
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('show-search');
+    const searchStatus = document.getElementById('search-status');
+    const showContainer = document.getElementById('showContainer');
+    let searchTimeout;
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const searchTerm = this.value.trim();
+        
+        searchStatus.style.display = 'block';
+        searchStatus.textContent = 'Searching...';
 
-        var allMovies = JSON.parse('{{ all_movies|escapejs }}');
-        var serverUrl = "{{ config.server_url|escapejs }}";
-
-        searchInput.addEventListener('keyup', function() {
-            var filter = searchInput.value.toLowerCase();
-            var filteredMovies = allMovies.filter(function(movie) {
-                return movie.Name.toLowerCase().includes(filter);
-            });
-
-            movieContainer.innerHTML = '';
-
-            filteredMovies.forEach(function(movie) {
-                var cardHTML = `
-                    <div class="movie-card">
-                        <a href="${window.location.origin}/movies/${movie.Id}/">
-                            <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded card-fixed-height">
-                                ${movie.ImageTags.Primary ? 
-                                    `<img src="${serverUrl}Items/${movie.Id}/Images/Primary?tag=${movie.ImageTags.Primary}&quality=90&maxWidth=300" 
-                                         alt="${movie.Name}" class="uk-margin-small-bottom uk-width-1-1">` 
-                                    : 
-                                    `<img src="{% static 'images/no-image.png' %}" alt="No image available" class="uk-margin-small-bottom uk-width-1-1">`
-                                }
-                                <h3 class="uk-card-title uk-text-center">${movie.Name}</h3>
-                                <p class="uk-text-center">${movie.ProductionYear}</p>
-                            </div>
-                        </a>
-                    </div>
-                `;
-                movieContainer.insertAdjacentHTML('beforeend', cardHTML);
-            });
-        });
+        searchTimeout = setTimeout(() => {
+            if (window.location.search.includes('search_tmdb=true')) {
+                // TMDB Search
+                fetch(`/search-tmdb-shows/?query=${encodeURIComponent(searchTerm)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        showContainer.innerHTML = ''; // Clear current results
+                        
+                        if (data.results && data.results.length > 0) {
+                            data.results.forEach(show => {
+                                const showCard = createShowCard(show, data.tmdb_base_url);
+                                showContainer.appendChild(showCard);
+                            });
+                        } else {
+                            showContainer.innerHTML = '<div class="uk-width-1-1 uk-text-center"><p class="uk-text-muted">No TV shows found.</p></div>';
+                        }
+                        searchStatus.style.display = 'none';
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        searchStatus.textContent = 'Error searching shows';
+                    });
+            } else {
+                // Local library search
+                const url = new URL(window.location.href);
+                if (searchTerm) {
+                    url.searchParams.set('search', searchTerm);
+                } else {
+                    url.searchParams.delete('search');
+                }
+                window.location.href = url.toString();
+            }
+        }, 500);
     });
-</script>
 
+    function createShowCard(show, tmdbBaseUrl) {
+        const div = document.createElement('div');
+        div.className = 'movie-card';
+        
+        const posterUrl = show.PosterPath ? 
+            `${tmdbBaseUrl}${show.PosterPath}` : 
+            '/static/images/placeholder.png';
+        
+        div.innerHTML = `
+            <div class="uk-inline uk-width-1-1 movie-container">
+                <img src="${posterUrl}" 
+                     alt="${show.Name}" 
+                     class="movie-poster">
+                <div class="tmdb-indicator">
+                    <span uk-icon="icon: close" class="uk-icon-button uk-button-danger"></span>
+                </div>
+                <div class="request-button uk-flex uk-flex-center">
+                    <button onclick="requestShow('${show.TMDBId}', '${show.Name.replace(/'/g, "\\'")}')" 
+                            class="uk-button uk-button-small uk-button-primary">
+                        Request Show
+                    </button>
+                </div>
+                <div class="movie-overlay uk-overlay-primary uk-position-cover uk-transition-fade">
+                    <div class="uk-position-center uk-text-center">
+                        <h4 class="uk-margin-small-bottom uk-text-small">${show.Name}</h4>
+                        <p class="uk-margin-remove uk-text-small">${show.ProductionYear || 'N/A'}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return div;
+    }
+
+    // Initialize search input with URL parameter if it exists
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchTerm = urlParams.get('search');
+    if (searchTerm) {
+        searchInput.value = searchTerm;
+    }
+});
+
+function requestShow(tmdbId, showTitle) {
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    
+    Swal.fire({
+        title: 'Request TV Show',
+        text: `Do you want to request ${showTitle}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, request it!',
+        cancelButtonText: 'No, cancel',
+        background: theme === 'dark' ? '#1a1a1a' : '#fff',
+        color: theme === 'dark' ? '#fff' : '#545454'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/proxy/jellyseerr/request/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    mediaType: "tv",
+                    mediaId: parseInt(tmdbId),
+                    tvdbId: 0,
+                    seasons: [],
+                    is4k: false,
+                    serverId: 0,
+                    profileId: 0,
+                    rootFolder: "",
+                    languageProfileId: 0,
+                    userId: 0
+                })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Request failed');
+                return response.json();
+            })
+            .then(data => {
+                Swal.fire({
+                    title: 'Success!',
+                    text: `${showTitle} has been requested successfully.`,
+                    icon: 'success',
+                    background: theme === 'dark' ? '#1a1a1a' : '#fff',
+                    color: theme === 'dark' ? '#fff' : '#545454'
+                });
+            })
+            .catch(error => {
+                console.error('Request error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to submit request. Please try again.',
+                    icon: 'error',
+                    background: theme === 'dark' ? '#1a1a1a' : '#fff',
+                    color: theme === 'dark' ? '#fff' : '#545454'
+                });
+            });
+        }
+    });
+}
+</script>
 {% endblock %}

@@ -27,9 +27,32 @@ class License(models.Model):
 
 class Config(models.Model):
     server_url = models.URLField()
-    app_instance_id = models.CharField(max_length=100, unique=True, null=True, blank=True)  # Unique identifier for the app instance
-    jellyfin_api_key = models.CharField(max_length=500, unique=True,  null=False, blank=False)
+    jellyfin_api_key = models.CharField(max_length=500, unique=True, null=False, blank=False)
     invite_code = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    tmdb_access_token = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="TMDB Access Token for API authentication"
+    )
+    tmdb_api_key = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="TMDB API Key for API authentication"
+    )
+    jellyseerr_url = models.URLField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="URL for Jellyseerr instance"
+    )
+    jellyseerr_api_key = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="API Key for Jellyseerr authentication"
+    )
 
 
 

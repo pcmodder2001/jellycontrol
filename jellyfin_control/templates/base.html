@@ -6,501 +6,747 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon"
-        href="https://raw.githubusercontent.com/pcmodder2001/jellycontrol/refs/heads/main/jellyfin_control/static/assets/custom_logo.png"
-        type="image/x-icon">
+    <title>{% block title %}Jellyfin Control{% endblock %}</title>
+    
+    <!-- UIkit CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit-icons.min.css" />
+    
+    <!-- SweetAlert2 CSS and JS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <title>{% block title %}{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.6.22/css/uikit.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.6.22/dist/css/uikit-icons.min.css" />
-    <!-- Add SweetAlert2 CSS and JS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@4/dark.css" rel="stylesheet">
 
     <style>
-        /* Light and Dark Mode Variables */
+        /* Theme Variables */
         :root {
-            --background-color: #ffffff;
-            --text-color: #000000;
-            --sidebar-background: #f0f0f0;
-            --sidebar-text-color: #000000;
-            --sidebar-icon-color: #000000;
-            --toggle-btn-background: #333333;
-            --toggle-btn-text-color: #ffffff;
-            --theme-slider-background: #007bff;
-            --theme-slider-icon-color: #ffffff;
-            --input-background-color: #ffffff;
-            --input-text-color: #000000;
-            --input-border-color: #cccccc;
-            --input-focus-border-color: #007bff;
-            --uk-container-color: #ffffff;
+            --background-color: #f8f9fa;
+            --text-color: #333333;
+            --sidebar-bg: #ffffff;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --hover-bg: rgba(0, 0, 0, 0.05);
+            --overlay-bg: rgba(0, 0, 0, 0.7);
+            --input-bg: #ffffff;
+            --border-color: rgba(0, 0, 0, 0.1);
         }
 
-        [data-theme='dark'] {
+        [data-theme="dark"] {
             --background-color: #121212;
             --text-color: #ffffff;
-            --sidebar-background: #1e1e1e;
-            --sidebar-text-color: #ffffff;
-            --sidebar-icon-color: #ffffff;
-            --toggle-btn-background: #444444;
-            --toggle-btn-text-color: #ffffff;
-            --theme-slider-background: #28a745;
-            --theme-slider-icon-color: #ffffff;
-            --input-background-color: #333333;
-            --input-text-color: #ffffff;
-            --input-border-color: #555555;
-            --input-focus-border-color: #28a745;
-            --uk-container-color: #333333;
+            --sidebar-bg: #1a1a1a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --hover-bg: rgba(255, 255, 255, 0.1);
+            --overlay-bg: rgba(0, 0, 0, 0.8);
+            --input-bg: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.1);
         }
 
-        /* Base styles */
-        html,
+        /* Base Styles */
         body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
-            background: linear-gradient(345deg, #77b1efab, #3b009b);
+            background-color: var(--background-color);
             color: var(--text-color);
+            min-height: 100vh;
+            margin: 0;
         }
 
+        /* Sidebar Styles */
         .sidebar {
-            width: 200px;
+            width: 250px;
             position: fixed;
             top: 0;
             left: 0;
             height: 100vh;
-            background-color: var(--sidebar-background);
-            transition: width 0.3s;
-            display: flex;
-            flex-direction: column;
-            font-weight: bold;
+            background-color: var(--sidebar-bg);
+            padding: 20px 0;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .sidebar.collapsed {
-            width: 60px;
+            z-index: 1000;
         }
 
         .sidebar .logo {
-            display: block;
+            width: 150px;
             height: auto;
-            margin: 20px auto;
+            display: block;
+            margin: 0 auto 30px;
         }
 
-        .sidebar .uk-nav {
-            flex: 1;
-            width: 100%;
-            margin: 0;
-        }
-
-        .sidebar .uk-nav>li>a {
+        .sidebar .uk-nav > li > a {
+            padding: 12px 20px;
+            color: var(--text-color);
             display: flex;
             align-items: center;
+            gap: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar .uk-nav > li > a:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .sidebar .uk-nav > li.uk-active > a {
+            background: linear-gradient(45deg, #77b1ef, #3b009b);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
             padding: 20px;
-            transition: padding 0.3s;
-            white-space: nowrap;
-            color: var(--sidebar-text-color);
+            min-height: 100vh;
         }
 
-        .sidebar.collapsed .uk-nav>li>a {
-            padding: 20px;
-            justify-content: center;
-        }
-
-        .sidebar .uk-nav>li>a span.text {
-            margin-left: 15px;
-            transition: opacity 0.3s;
-        }
-
-        .sidebar.collapsed .uk-nav>li>a span.text {
-            opacity: 0;
-            width: 0;
-            margin-left: 0;
-            overflow: hidden;
-        }
-
-        .toggle-btn {
-            position: absolute;
-            top: 9%;
-            right: -20px;
-            background-color: var(--toggle-btn-background);
-            color: var(--toggle-btn-text-color);
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 0 5px 5px 0;
-            transition: right 0.3s;
-            z-index: 1000;
-        }
-
-        .content {
-            margin-left: 200px;
-            transition: margin-left 0.3s;
-            padding: 20px;
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .content.collapsed {
-            margin-left: 60px;
-        }
-
-        .theme-slider {
-            position: absolute;
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
             bottom: 20px;
             left: 20px;
+            z-index: 1001;
+            padding: 10px 15px;
+            border-radius: 8px;
+            background: var(--card-bg);
+            cursor: pointer;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            background-color: var(--theme-slider-background);
-            color: var(--theme-slider-icon-color);
-            padding: 10px;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
+            gap: 8px;
+            border: 1px solid var(--border-color);
         }
 
-        .theme-slider i {
-            font-size: 20px;
+        .theme-toggle:hover {
+            background: var(--hover-bg);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        .theme-slider span {
-            margin-left: 10px;
+        [data-theme="dark"] .theme-toggle {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        .theme-slider:hover {
-            background-color: var(--theme-slider-background);
-            opacity: 0.8;
+        .theme-toggle span {
+            color: var(--text-color);
         }
 
-        .theme-slider .light-mode {
-            display: none;
+        .theme-toggle .theme-text {
+            font-size: 0.9rem;
+            font-weight: 500;
         }
 
-        [data-theme='dark'] .theme-slider .dark-mode {
-            display: none;
+        /* Card and Container Styles */
+        .uk-card {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            transition: transform 0.3s;
         }
 
-        [data-theme='light'] .theme-slider .light-mode {
-            display: block;
+        .uk-card:hover {
+            transform: scale(1.02);
         }
 
-        .uk-switch {
+        .uk-container-expand {
+            padding-left: 15px !important;
+            padding-right: 15px !important;
+            max-width: none;
+            background: transparent;
+        }
+
+        /* Form and Input Styles */
+        .uk-input, .uk-select, .uk-textarea {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+
+        .uk-form-label {
+            color: var(--text-color);
+        }
+
+        /* Movie Grid Styles */
+        .movie-container {
             position: relative;
-            display: inline-block;
-            height: 34px;
-            width: 60px;
+            padding-top: 150%;
+            overflow: hidden;
+            margin-bottom: 10px;
         }
 
-        /* Hide default HTML checkbox */
-        .uk-switch input {
-            display: none;
+        .movie-poster {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
-        /* Slider */
-        .uk-switch-slider {
-            background-color: rgba(0, 0, 0, 0.22);
+        .movie-overlay {
+            opacity: 0;
+            background: var(--overlay-bg);
+            transition: all 0.3s ease;
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            border-radius: 500px;
             bottom: 0;
-            cursor: pointer;
-            transition-property: background-color;
-            transition-duration: .2s;
-            box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.07);
-        }
-
-        /* Switch pointer */
-        .uk-switch-slider:before {
-            content: '';
-            background-color: #fff;
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            left: 2px;
-            bottom: 2px;
-            border-radius: 50%;
-            transition-property: transform, box-shadow;
-            transition-duration: .2s;
-        }
-
-        /* Slider active color */
-        input:checked+.uk-switch-slider {
-            background-color: #39f !important;
-        }
-
-        /* Pointer active animation */
-        input:checked+.uk-switch-slider:before {
-            transform: translateX(26px);
-        }
-
-        /* Modifiers */
-        .uk-switch-slider.uk-switch-on-off {
-            background-color: #f0506e;
-        }
-
-        input:checked+.uk-switch-slider.uk-switch-on-off {
-            background-color: #32d296 !important;
-        }
-
-        /* Style Modifier */
-        .uk-switch-slider.uk-switch-big:before {
-            transform: scale(1.2);
-            box-shadow: 0 0 6px rgba(0, 0, 0, 0.22);
-        }
-
-        .uk-switch-slider.uk-switch-small:before {
-            box-shadow: 0 0 6px rgba(0, 0, 0, 0.22);
-        }
-
-        input:checked+.uk-switch-slider.uk-switch-big:before {
-            transform: translateX(26px) scale(1.2);
-        }
-
-        /* Inverse Modifier - affects only default */
-        .uk-light .uk-switch-slider:not(.uk-switch-on-off) {
-            background-color: rgba(255, 255, 255, 0.22);
-        }
-
-        /* Input and textarea styles */
-        input[type="text"],
-        input[type="password"],
-        input[type="email"],
-        input[type="number"],
-        textarea,
-        select {
-            background-color: var(--input-background-color);
-            color: var(--input-text-color);
-            border: 1px solid var(--input-border-color);
-            border-radius: 4px;
-            padding: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-            width: 100%;
-        }
-
-        input[type="text"]:focus,
-        input[type="password"]:focus,
-        input[type="email"]:focus,
-        input[type="number"]:focus,
-        textarea:focus,
-        select:focus {
-            border-color: var(--input-focus-border-color);
-            outline: none;
-        }
-
-        /* Optional: Add styles for disabled inputs */
-        input[disabled],
-        textarea[disabled],
-        select[disabled] {
-            background-color: #f5f5f5;
-            color: #888888;
-            border-color: #cccccc;
-        }
-
-        /* Add placeholder color */
-        ::placeholder {
-            color: var(--text-color);
-        }
-
-        [data-theme='dark'] ::placeholder {
-            color: #aaaaaa;
-        }
-
-        /* Custom hover color for table rows */
-        /* Change the row background color and text color on hover */
-        .uk-table-hover tbody tr:hover {
-            background-color: #3a3a3a;
-            color: white;
-        }
-
-        /* Change the edit button color on row hover */
-        .uk-table-hover tbody tr:hover .edit-button {
-            background-color: #ffffff;
-            /* Change the background color */
-            color: #3a3a3a;
-            /* Change the text color */
-            border-color: #ffffff;
-            /* Change the border color */
-        }
-
-        /* Change the icon color on row hover */
-        .uk-table-hover tbody tr:hover .edit-button span[uk-icon] {
-            color: #3a3a3a;
-            /* Change the icon color */
-        }
-
-        .card-fixed-height {
-            height: auto;
-            /* Adjust height as needed */
-            overflow: hidden;
-            /* Ensures content does not overflow */
-        }
-
-        .card-fixed-height img {
-            max-height: 250px;
-            /* Limit image height */
-            object-fit: fill;
-            /* Ensures image covers the area without stretching */
-        }
-
-        .card-fixed-height .uk-card-body {
             display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            /* Distributes content evenly */
-        }
-
-        .text-box {
-            background-color: rgb(235, 235, 235);
-            color: rgb(0, 0, 0);
-            border-radius: 8px;
-            padding: 10px;
+            align-items: center;
+            justify-content: center;
             text-align: center;
         }
 
-        .custom-white-box {
+        .movie-card:hover .movie-overlay {
+            opacity: 1;
+        }
+
+        /* Grid Spacing */
+        .uk-grid-small {
+            margin-left: -10px;
+        }
+
+        .uk-grid-small > * {
+            padding-left: 10px;
+        }
+
+        /* Navigation Pills */
+        .uk-subnav-pill > * > :first-child {
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        .uk-subnav-pill > .uk-active > a {
+            background: linear-gradient(45deg, #77b1ef, #3b009b);
+        }
+
+        /* Utility Classes */
+        .uk-margin-small {
+            margin-bottom: 10px !important;
+        }
+
+        /* Modal Styles */
+        .uk-modal-dialog {
+            background: var(--sidebar-bg);
+            color: var(--text-color);
+        }
+
+        /* Table Styles */
+        .uk-table {
+            background: var(--card-bg);
+            color: var(--text-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .uk-table thead {
+            background: var(--sidebar-bg);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .uk-table th {
+            color: var(--text-color);
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 16px 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .uk-table td {
+            padding: 16px 12px;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .uk-table tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        .uk-table-hover tbody tr:hover {
+            background: var(--hover-bg);
+        }
+
+        /* Table Button Styles */
+        .uk-table .uk-button {
+            border-radius: 6px;
+            text-transform: none;
+            font-weight: 500;
+            padding: 6px 12px;
+            transition: all 0.2s ease;
+        }
+
+        .uk-table .uk-button-small {
+            font-size: 0.875rem;
+        }
+
+        .uk-table .uk-button-group {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        /* Table Label Styles */
+        .uk-table .uk-label {
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            text-transform: none;
+            font-size: 0.8rem;
+        }
+
+        .uk-table .uk-label-success {
+            background: #32d296;
+        }
+
+        .uk-table .uk-label-danger {
+            background: #f0506e;
+        }
+
+        /* Table Switch Styles */
+        .uk-table .uk-switch {
+            position: relative;
+            display: inline-block;
+            height: 24px;
+            width: 44px;
+        }
+
+        .uk-table .uk-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .uk-table .uk-switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .uk-table .uk-switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
             background-color: white;
-            padding: 2%;
-            border-radius: 10px;
+            transition: .4s;
+            border-radius: 50%;
         }
 
-        .uk-active {
-            background: linear-gradient(345deg, #77b1efab, #3b009b);
-
+        .uk-table input:checked + .uk-switch-slider {
+            background-color: #32d296;
         }
 
-        .uk-card-default {
-            background: #ffffff2b;
-            color: #000000;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, .08);
+        .uk-table input:checked + .uk-switch-slider:before {
+            transform: translateX(20px);
         }
 
-        .uk-card-default:hover {
-            background: #ffffff;
-            color: #000000;
-            /* Changed text color for better contrast */
-            box-shadow: 0 5px 15px rgba(0, 0, 0, .12);
-            /* Optional: slightly enhanced shadow on hover */
+        /* Table Icon Styles */
+        .uk-table [uk-icon] {
+            margin-right: 4px;
+        }
+
+        /* Table Responsive Styles */
+        @media (max-width: 960px) {
+            .uk-table-responsive td {
+                padding: 12px 8px;
+            }
+
+            .uk-table-responsive .uk-button-group {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .uk-table-responsive .uk-button {
+                width: 100%;
+                margin: 0;
+            }
+        }
+
+        /* Table Container Styles */
+        .uk-overflow-auto {
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background: var(--card-bg);
+            padding: 16px;
+        }
+
+        /* Pagination Styles */
+        .uk-pagination > li > a {
+            color: var(--text-color);
+        }
+
+        .uk-pagination > .uk-active > * {
+            background: linear-gradient(45deg, #77b1ef, #3b009b);
+            color: white;
+        }
+
+        /* Login Form Styling */
+        .login-form {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        /* Input Styling */
+        .login-form .uk-input {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            height: 45px;
+            transition: all 0.3s ease;
+        }
+
+        .login-form .uk-input:focus {
+            border-color: #77b1ef;
+            box-shadow: 0 0 0 2px rgba(119, 177, 239, 0.2);
+        }
+
+        /* Button Styling */
+        .login-form .uk-button-primary {
+            background: linear-gradient(45deg, #77b1ef, #3b009b);
+            border-radius: 8px;
+            height: 45px;
+            font-weight: 500;
+            text-transform: none;
+            transition: all 0.3s ease;
+        }
+
+        .login-form .uk-button-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 0, 155, 0.2);
+        }
+
+        .login-form .uk-button-default {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            height: 45px;
+            font-weight: 500;
+            text-transform: none;
+        }
+
+        .login-form .uk-button-text {
+            color: var(--text-color);
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .login-form .uk-button-text:hover {
+            opacity: 1;
+        }
+
+        /* Form Label Styling */
+        .login-form .uk-form-label {
+            color: var(--text-color);
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        /* Icon Styling */
+        .login-form .uk-form-icon {
+            color: var(--text-color);
+            opacity: 0.5;
+        }
+
+        /* Dark Mode Specific Styles */
+        [data-theme="dark"] .login-form {
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="dark"] .login-form .uk-input:focus {
+            background-color: rgba(119, 177, 239, 0.1);
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 640px) {
+            .login-form {
+                padding: 20px !important;
+            }
+        }
+
+        /* Login Background Container */
+        .login-background {
+            background-color: var(--sidebar-bg);
+            border-radius: 15px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] .login-background {
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Add to your existing styles */
+        .uk-container-login {
+            max-width: 500px !important;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+
+        /* Add this to your existing styles */
+        .uk-container-register {
+            max-width: 600px !important;  /* Wider than login container (500px) */
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+
+        /* Add to your existing styles */
+        .tv-shows-grid > * {
+            width: 50%; /* Default for mobile */
+        }
+
+        @media (min-width: 640px) {
+            .tv-shows-grid > * {
+                width: 25%;
+            }
+        }
+
+        @media (min-width: 960px) {
+            .tv-shows-grid > * {
+                width: 12.5%; /* This will give us 8 items per row */
+            }
+        }
+
+        /* Add this to your existing styles - make it more specific */
+        .uk-container-expand .uk-grid > .movie-card {
+            width: 12.5% !important;  /* Force 8 per row */
+        }
+
+        /* Maintain responsiveness */
+        @media (max-width: 1200px) {
+            .uk-container-expand .uk-grid > .movie-card {
+                width: 25% !important;  /* 4 per row on medium screens */
+            }
+        }
+
+        @media (max-width: 640px) {
+            .uk-container-expand .uk-grid > .movie-card {
+                width: 50% !important;  /* 2 per row on small screens */
+            }
+        }
+
+        /* Add/Update this in your existing styles */
+        .jellyfin-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 2;
+        }
+
+        .jellyfin-indicator .uk-icon-button {
+            width: 25px;
+            height: 25px;
+            background: #32d296 !important;  /* Green color */
+            color: white !important;
+            border: 2px solid white;
+            padding: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .jellyfin-indicator .uk-icon-button:hover {
+            background: #2ab881 !important;  /* Slightly darker green on hover */
+        }
+
+        /* SweetAlert2 Custom Styling */
+        .swal2-popup.swal2-toast {
+            background-color: var(--card-bg) !important;
+            color: var(--text-color) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            padding: 12px !important;
+            width: auto !important;
+        }
+        
+        .swal2-title, .swal2-content {
+            color: var(--text-color) !important;
+        }
+
+        .swal2-timer-progress-bar {
+            background: var(--primary-color) !important;
+        }
+
+        /* Remove background overlay completely */
+        .swal2-container.swal2-top-end {
+            background: none !important;
+            pointer-events: none !important;
+        }
+
+        .swal2-popup {
+            pointer-events: all !important;
+        }
+
+        /* Make toast more compact */
+        .swal2-toast {
+            max-width: 350px !important;
+            border-radius: 8px !important;
         }
     </style>
-
+    {% csrf_token %}
 </head>
 
 <body>
-    <div class="sidebar collapsed" id="sidebar">
-        <header>
-            <a href="/home">
-                <img src="https://raw.githubusercontent.com/pcmodder2001/jellycontrol/refs/heads/main/jellyfin_control/static/assets/custom_logo.png"
-                    alt="Site Logo" class="logo">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <a href="{% url 'home' %}">
+                <img src="{% static 'images/custom_logo.png' %}"
+                 alt="Logo" 
+                 class="logo">
             </a>
-        </header>
-        <span class="toggle-btn" id="toggle-btn">☰</span>
+        
         <ul class="uk-nav uk-nav-default">
             {% if user.is_authenticated %}
             {% if user.is_superuser %}
             <li class="{% if request.path == '/users/' %}uk-active{% endif %}">
-                <a href="{% url 'view_users' %}"><span uk-icon="icon: users"></span> <span class="text">Users</span></a>
+                    <a href="{% url 'view_users' %}">
+                        <span uk-icon="users"></span>
+                        <span>Users</span>
+                    </a>
             </li>
             <li class="{% if request.path == '/settings/' %}uk-active{% endif %}">
-                <a href="{% url 'settings' %}"><span uk-icon="icon: settings"></span> <span
-                        class="text">Settings</span></a>
+                    <a href="{% url 'settings' %}">
+                        <span uk-icon="settings"></span>
+                        <span>Settings</span>
+                    </a>
             </li>
             <li class="{% if request.path == '/devices/' %}uk-active{% endif %}">
-                <a href="{% url 'view_devices' %}"><span uk-icon="icon: desktop"></span> <span
-                        class="text">Devices</span></a>
+                    <a href="{% url 'view_devices' %}">
+                        <span uk-icon="desktop"></span>
+                        <span>Devices</span>
+                    </a>
             </li>
             <li class="{% if request.path == '/sessions/' %}uk-active{% endif %}">
-                <a href="{% url 'sessions_page' %}"><span uk-icon="icon: tv"></span> <span
-                        class="text">Sessions</span></a>
+                    <a href="{% url 'sessions_page' %}">
+                        <span uk-icon="tv"></span>
+                        <span>Sessions</span>
+                    </a>
             </li>
             <li class="{% if request.path == '/logs/' %}uk-active{% endif %}">
-                <a href="{% url 'logs' %}"><span uk-icon="icon: file-text"></span> <span class="text">Logs</span></a>
+                    <a href="{% url 'logs' %}">
+                        <span uk-icon="file-text"></span>
+                        <span>Logs</span>
+                    </a>
             </li>
             {% endif %}
             <li class="{% if request.path == '/invitations/' %}uk-active{% endif %}">
-                <a href="{% url 'invitation_list' %}"><span uk-icon="icon: social"></span> <span
-                        class="text">Invites</span></a>
+                    <a href="{% url 'invitation_list' %}">
+                        <span uk-icon="social"></span>
+                        <span>Invites</span>
+                    </a>
             </li>
             <li class="{% if request.path == '/movies/' %}uk-active{% endif %}">
-                <a href="{% url 'movie_list' %}"><span uk-icon="icon: video-camera"></span> <span
-                        class="text">Movies</span></a>
+                    <a href="{% url 'movie_list' %}">
+                        <span uk-icon="video-camera"></span>
+                        <span>Movies</span>
+                    </a>
             </li>
             <li class="{% if request.path == '/tv-shows/' %}uk-active{% endif %}">
-                <a href="{% url 'series_list' %}"><span uk-icon="icon: video-camera"></span> <span class="text">TV
-                        Shows</span></a>
+                    <a href="{% url 'series_list' %}">
+                        <span uk-icon="play-circle"></span>
+                        <span>TV Shows</span>
+                    </a>
             </li>
-            <li class="{% if request.path == '/logout/' %}uk-active{% endif %}">
-                <a href="{% url 'logout' %}"><span uk-icon="icon: sign-out"></span> <span class="text">Logout</span></a>
+                <li>
+                    <a href="{% url 'logout' %}">
+                        <span uk-icon="sign-out"></span>
+                        <span>Logout</span>
+                    </a>
             </li>
             {% else %}
-            <li class="{% if request.path == '/accounts/login/' %}uk-active{% endif %}">
-                <a href="{% url 'login' %}"><span uk-icon="icon: sign-in"></span> <span class="text">Login</span></a>
+                <li class="{% if request.path == '/login/' %}uk-active{% endif %}">
+                    <a href="{% url 'login' %}">
+                        <span uk-icon="sign-in"></span>
+                        <span>Login</span>
+                    </a>
             </li>
             <li class="{% if request.path == '/register/' %}uk-active{% endif %}">
-                <a href="{% url 'enter_invite' %}"><span uk-icon="icon: plus-circle"></span> <span class="text">Sign
-                        Up</span></a>
+                    <a href="{% url 'enter_invite' %}">
+                        <span uk-icon="plus-circle"></span>
+                        <span>Sign Up</span>
+                    </a>
             </li>
-
-
             {% endif %}
         </ul>
     </div>
 
-
-
-
-    <div class="content" id="content">
-        <div class="uk-container uk-margin-top">
-            {% block content %}
-            {% endblock %}
+    <!-- Theme Toggle Button -->
+    <div class="theme-toggle" onclick="toggleTheme()">
+        <span class="theme-icon" uk-icon="icon: lifesaver"></span>
+        <span class="theme-text">Light Mode</span>
         </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        {% block content %}{% endblock %}
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.6.22/js/uikit.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.6.22/js/uikit-icons.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <!-- UIkit JS -->
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/js/uikit-icons.min.js"></script>
 
     <script>
-        document.getElementById('toggle-btn').onclick = function () {
-            var sidebar = document.getElementById('sidebar');
-            var content = document.getElementById('content');
-            sidebar.classList.toggle('collapsed');
-        };
-
-        document.getElementById('theme-slider').addEventListener('click', function () {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
+        // Theme Toggle Function
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', newTheme);
+            const themeIcon = document.querySelector('.theme-icon');
+            const themeText = document.querySelector('.theme-text');
+            
+            html.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
-        });
-
-    </script>
-    <script>
-        {% for message in messages %}
-        let iconType = 'info'; // Default icon type
-        if ('{{ message.tags }}' === 'error') {
-            iconType = 'error';
-        } else if ('{{ message.tags }}' === 'success') {
-            iconType = 'success';
+            
+            // Update icon and text
+            if (newTheme === 'dark') {
+                themeIcon.setAttribute('uk-icon', 'icon: cloud');
+                themeText.textContent = 'Dark Mode';
+            } else {
+                themeIcon.setAttribute('uk-icon', 'icon: lifesaver');
+                themeText.textContent = 'Light Mode';
+            }
         }
 
-        Swal.fire({
-            text: '{{ message|escapejs }}',
-            icon: iconType,
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 5000,
-            timerProgressBar: true
-        });
-        {% endfor %}
-    </script>
-</body>
+        // Initialize theme and handle messages
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set initial theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const themeIcon = document.querySelector('.theme-icon');
+            const themeText = document.querySelector('.theme-text');
+            
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
 
+            // Handle Django messages
+            {% if messages %}
+                {% for message in messages %}
+                    Swal.fire({
+                        title: '{{ message.tags|title }}',
+                        text: '{{ message }}',
+                        icon: '{{ message.tags }}',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                {% endfor %}
+            {% endif %}
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
 
 </html>

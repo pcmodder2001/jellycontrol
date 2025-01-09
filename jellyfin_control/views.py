@@ -1,4 +1,5 @@
 import os
+import shutil
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
@@ -10,7 +11,7 @@ from django.http import HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from datetime import datetime
-from jellyfin_control.forms import LicenseForm
+from jellyfin_control.forms import  ConfigForm
 from django.utils import timezone
 from django.contrib.auth import logout as django_logout
 from django.core.paginator import Paginator
@@ -30,6 +31,7 @@ from django.core.mail import EmailMessage
 from django.http import FileResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.management import call_command
+import re
 
 
 
@@ -189,6 +191,7 @@ def generate_api_key_view(request):
                     log_action('INFO', 'API key created and saved.', user)
 
                     # Redirect to success page or return success response
+                    messages.success(request, "API key created successfully")
                     return JsonResponse({'success': True, 'message': 'API key created successfully.'})
                 else:
                     log_action('ERROR', 'No API key found after creation.', user)
@@ -244,13 +247,15 @@ def sync_users(server_url, token):
         "X-Emby-Token": token
     }
     
-    # Fetch the users from the server
+    # Fetch the users from Jellyfin
     response = requests.get(users_url, headers=headers)
     
     if response.status_code == 200:
-        users = response.json()
+        jellyfin_users = response.json()
+        jellyfin_user_ids = {user['Id'] for user in jellyfin_users}  # Collect all Jellyfin user IDs
         
-        for user in users:
+        # Sync each Jellyfin user
+        for user in jellyfin_users:
             jellyfin_user_id = user.get('Id')
             email = user.get('Name')
             is_admin = user.get('Policy', {}).get('IsAdministrator', False)
@@ -271,8 +276,13 @@ def sync_users(server_url, token):
                     db_user.is_superuser = is_admin
                     db_user.is_staff = is_admin  # Usually, a superuser is also staff
                     db_user.save()
+        
+        # Delete Django users that are no longer in Jellyfin
+        CustomUser.objects.exclude(jellyfin_user_id__in=jellyfin_user_ids).delete()
+    
     else:
         raise Exception(f"Failed to retrieve users: {response.status_code} - {response.text}")
+
 
 def authenticate_with_jellyfin(email, password, ):
     config = Config.objects.first()
@@ -496,9 +506,9 @@ def home(request):
             items = []
 
         # Filter for movies only and limit to 4
-        latest_movies = [item for item in items if item.get('Type') == 'Movie'][:4]
+        latest_movies = [item for item in items if item.get('Type') == 'Movie'][:6]
         # Filter for series only and limit to 4
-        latest_shows = [item for item in items if item.get('Type') == 'Series'][:4]
+        latest_shows = [item for item in items if item.get('Type') == 'Series'][:6]
 
     except requests.exceptions.RequestException as e:
         latest_movies = []
@@ -580,6 +590,7 @@ def update_user(request, user_id):
     server_url = config.server_url
     update_user_url = f'{server_url}/Users/{user_id}'  # Endpoint for updating general user data
     update_policy_url = f'{server_url}/Users/{user_id}/Policy'  # Endpoint for updating user policy data
+    virtual_folders_url = f'{server_url}/Library/VirtualFolders'  # Endpoint to fetch virtual folders
 
     headers = {
         'X-Emby-Token': access_token,
@@ -592,9 +603,19 @@ def update_user(request, user_id):
             response = requests.get(update_user_url, headers=headers)
             if response.status_code == 200:
                 user_data = response.json()
+                
+                # Fetch list of virtual folders
+                folders = []
+                folders_response = requests.get(virtual_folders_url, headers=headers)
+                if folders_response.status_code == 200:
+                    folders_data = folders_response.json()
+                    folders = [folder['Name'] for folder in folders_data]  # Only get the 'Name' of each folder
+
                 context = {
                     'user_data': user_data,
+                    'folders': folders,  # Pass the folders to the template
                 }
+                print(folders)
                 return render(request, 'update_user.html', context)
             else:
                 error_message = f"Failed to fetch user data: {response.status_code} - {response.text}"
@@ -613,19 +634,20 @@ def update_user(request, user_id):
                 'LastLoginDate': request.POST.get('last_login_date'),
                 'LastActivityDate': request.POST.get('last_activity_date'),
                 'Policy': {
-                'IsAdministrator': bool(request.POST.get('is_administrator', False)),
-                'EnableCollectionManagement': bool(request.POST.get('enable_collection_management', False)),
-                'EnableSubtitleManagement': bool(request.POST.get('enable_subtitle_management', False)),
-                'EnableLyricManagement': bool(request.POST.get('enable_lyric_management', False)),
-                'IsDisabled': bool(request.POST.get('is_disabled', False)),
-                'EnableUserPreferenceAccess': bool(request.POST.get('enable_user_preference_access', False)),
-                'EnableRemoteControlOfOtherUsers': bool(request.POST.get('enable_remote_control_of_other_users', False)),
-                'EnableSharedDeviceControl': bool(request.POST.get('enable_shared_device_control', False)),
-                'EnableRemoteAccess': bool(request.POST.get('enable_remote_access', False)),
-                'EnablePlaybackRemuxing': bool(request.POST.get('enable_playback_remuxing', False)),
-                'ForceRemoteSourceTranscoding': bool(request.POST.get('force_remote_source_transcoding', False)),
-                'PasswordResetProviderId': request.POST.get('password_reset_provider_id', 'default_provider_id'),
-                'AuthenticationProviderId': request.POST.get('authentication_provider_id', 'default_auth_provider_id'),
+                    'IsAdministrator': bool(request.POST.get('is_administrator', False)),
+                    'EnableCollectionManagement': bool(request.POST.get('enable_collection_management', False)),
+                    'EnableSubtitleManagement': bool(request.POST.get('enable_subtitle_management', False)),
+                    'EnableLyricManagement': bool(request.POST.get('enable_lyric_management', False)),
+                    'IsDisabled': bool(request.POST.get('is_disabled', False)),
+                    'EnableUserPreferenceAccess': bool(request.POST.get('enable_user_preference_access', False)),
+                    'EnableRemoteControlOfOtherUsers': bool(request.POST.get('enable_remote_control_of_other_users', False)),
+                    'EnableSharedDeviceControl': bool(request.POST.get('enable_shared_device_control', False)),
+                    'EnableRemoteAccess': bool(request.POST.get('enable_remote_access', False)),
+                    'EnablePlaybackRemuxing': bool(request.POST.get('enable_playback_remuxing', False)),
+                    'ForceRemoteSourceTranscoding': bool(request.POST.get('force_remote_source_transcoding', False)),
+                    'PasswordResetProviderId': request.POST.get('password_reset_provider_id', 'default_provider_id'),
+                    'AuthenticationProviderId': request.POST.get('authentication_provider_id', 'default_auth_provider_id'),
+                    'EnableAllFolders': bool(request.POST.get('enableallfolders', False)),
                 }
             }
 
@@ -650,7 +672,13 @@ def update_user(request, user_id):
                 'ForceRemoteSourceTranscoding': bool(request.POST.get('force_remote_source_transcoding', False)),
                 'PasswordResetProviderId': request.POST.get('password_reset_provider_id', 'default_provider_id'),
                 'AuthenticationProviderId': request.POST.get('authentication_provider_id', 'default_auth_provider_id'),
+                'EnableAllFolders': bool(request.POST.get('enableallfolders', False)),
             }
+
+            # If EnableAllFolders is false, include selected folders
+            if not updated_policy_data['EnableAllFolders']:
+                selected_folders = request.POST.getlist('selected_folders')
+                updated_policy_data['SelectedFolders'] = selected_folders
 
             # Update user policy data
             response = requests.post(update_policy_url, json=updated_policy_data, headers=headers)
@@ -667,6 +695,7 @@ def update_user(request, user_id):
             return render(request, 'update_user.html', {'error_message': error_message})
 
     return HttpResponseBadRequest("Invalid request method")
+
 
 
 
@@ -874,69 +903,49 @@ def create_invitation(request):
 @login_required
 def invitation_create(request):
     if request.method == 'POST':
-        invite_code = request.POST.get('invite_code')
-        max_users = request.POST.get('max_users')
-        expiry_str = request.POST.get('expiry')
-
-        # Validate inputs
-        if not invite_code or not max_users:
-            messages.error(request, "Invite code and max users are required.")
-            LogEntry.objects.create(
-                action='ERROR',
-                user=request.user,
-                message="Failed to create invitation: Invite code and max users are required."
-            )
-            return redirect('invitation_create')
-
         try:
-            max_users = int(max_users)
-        except ValueError:
-            messages.error(request, "Max users must be a valid integer.")
-            LogEntry.objects.create(
-                action='ERROR',
-                user=request.user,
-                message="Failed to create invitation: Max users is not a valid integer."
-            )
-            return redirect('invitation_create')
+            # Parse JSON data for AJAX request
+            data = json.loads(request.body)
+            invite_code = data.get('invite_code')
+            max_users = int(data.get('max_users'))
+            expiry = data.get('expiry')
 
-        if expiry_str:
-            try:
-                # Ensure the correct datetime format for Django
-                expiry = datetime.strptime(expiry_str, '%Y-%m-%dT%H:%M')
-            except ValueError:
-                messages.error(request, "Invalid date format for expiry. Use YYYY-MM-DDTHH:MM format.")
-                LogEntry.objects.create(
-                    action='ERROR',
-                    user=request.user,
-                    message="Failed to create invitation: Invalid date format for expiry."
-                )
-                return redirect('invitation_create')
-        else:
-            expiry = None
+            # Validate the data
+            if not invite_code or not max_users:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Missing required fields'
+                })
 
-        # Create invitation
-        try:
-            user = request.user
-            invitation = Invitation(invite_code=invite_code, max_users=max_users, expiry=expiry, user=user)
-            invitation.save()
-            messages.success(request, "Invitation created successfully.")
-            LogEntry.objects.create(
-                action='CREATED',
+            # Create the invitation
+            invitation = Invitation.objects.create(
                 user=request.user,
-                message=f"Invitation '{invite_code}' created successfully with max users {max_users} and expiry {expiry}."
+                invite_code=invite_code,
+                max_users=max_users,
+                expiry=expiry if expiry else None
             )
+
+            return JsonResponse({
+                'success': True,
+                'invitation': {
+                    'id': invitation.id,
+                    'invite_code': invitation.invite_code,
+                    'max_users': invitation.max_users,
+                    'expiry': invitation.expiry.isoformat() if invitation.expiry else None
+                }
+            })
+
         except Exception as e:
-            messages.error(request, f"An error occurred: {e}")
-            LogEntry.objects.create(
-                action='ERROR',
-                user=request.user,
-                message=f"Failed to create invitation '{invite_code}': {str(e)}"
-            )
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
 
-        return redirect('invitation_list')
-
-    return render(request, 'invitation_create.html')
-
+    # Return error for non-POST requests
+    return JsonResponse({
+        'success': False,
+        'error': 'Invalid request method'
+    })
 
 @login_required
 def invitation_delete(request, invitation_id):
@@ -1274,30 +1283,19 @@ def view_license(request):
 @login_required
 @superuser_required
 def settings_view(request):
+    # Get the first config object or create one if it doesn't exist
+    config, created = Config.objects.get_or_create(pk=1)
+    
     if request.method == 'POST':
-        # Handle Config Update
-        config_instance = Config.objects.first()  # Assuming only one instance of Config
-        if config_instance:
-            config_instance.server_url = request.POST.get('server_url')
-            config_instance.jellyfin_api_key = request.POST.get('jellyfin_api_key')
-            config_instance.invite_code = request.POST.get('invite_code')  # Allow setting invite code
-            config_instance.save()
-
+        form = ConfigForm(request.POST, instance=config)
+        if form.is_valid():
+            form.save()
             messages.success(request, 'Settings updated successfully.')
-        else:
-            messages.error(request, 'Configuration not found. Please ensure it exists.')
-
-        return redirect('settings')
-
+            return redirect('settings')
     else:
-        # Load current settings
-        config_instance = Config.objects.first()
-        license_instance = License.objects.first()
-
-        return render(request, 'settings.html', {
-            'config': config_instance,
-            'license': license_instance,
-        })
+        form = ConfigForm(instance=config)
+    
+    return render(request, 'settings.html', {'form': form})
 
 @login_required
 @superuser_required
@@ -1339,7 +1337,25 @@ def download_database(request):
 def upload_database(request):
     if request.method == 'POST' and 'database' in request.FILES:
         db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'db.sqlite3')
+        backup_db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'db_backup.sqlite3')
         uploaded_file = request.FILES['database']
+
+        # Create a backup of the current database
+        try:
+            shutil.copy2(db_path, backup_db_path)  # Make a backup of the current DB
+            LogEntry.objects.create(
+                action='BACKUP',
+                user=request.user,
+                message="Database backup created successfully."
+            )
+        except Exception as e:
+            messages.error(request, f"Failed to create database backup: {str(e)}")
+            LogEntry.objects.create(
+                action='ERROR',
+                user=request.user,
+                message=f"Failed to create database backup: {str(e)}"
+            )
+            return redirect('settings')
 
         try:
             # Save the uploaded database
@@ -1352,41 +1368,80 @@ def upload_database(request):
             call_command('migrate')  # Apply migrations
 
             messages.success(request, "Database uploaded and migrations applied successfully.")
-
-            # Log the successful upload and migration application
             LogEntry.objects.create(
                 action='UPLOAD',
                 user=request.user,
                 message="Database uploaded and migrations applied successfully."
             )
-
         except Exception as e:
-            messages.error(request, f"Migration failed: {str(e)}")
-            # Log the error that occurred during the upload and migration
+            # Restore the backup database in case of any failure
+            shutil.copy2(backup_db_path, db_path)  # Revert to the backup
+            messages.error(request, f"Migration failed and the previous database has been restored: {str(e)}")
             LogEntry.objects.create(
                 action='ERROR',
                 user=request.user,
-                message=f"Failed to upload database: {str(e)}"
+                message=f"Failed to upload database and reverted to backup: {str(e)}"
             )
+        finally:
+            # Clean up the backup if everything was successful
+            if os.path.exists(backup_db_path):
+                os.remove(backup_db_path)
 
-        return redirect('settings')  # Replace 'settings' with the name of the page to redirect to
+        return redirect('settings')
 
     messages.error(request, "Invalid request.")
-    # Log the invalid request
     LogEntry.objects.create(
         action='ERROR',
         user=request.user,
         message="Invalid request for database upload."
     )
-    return redirect('settings')  # Replace 'settings' with the name of the page to redirect to
+    return redirect('settings')
 
 @login_required
 @superuser_required
-def logs_view(request):
-    logs = LogEntry.objects.all()
-    paginator = Paginator(logs, 10)  # Show 10 logs per page
-    page_number = request.GET.get('page')
+def logs_view(request):  # Changed from logs to logs_view
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        search_term = request.GET.get('search', '').lower()
+        # Get all logs and filter in memory
+        all_logs = LogEntry.objects.all().order_by('-created_at')
+        
+        if search_term:
+            filtered_logs = [
+                log for log in all_logs if (
+                    search_term in log.action.lower() or
+                    search_term in str(log.user).lower() or
+                    search_term in log.message.lower() or
+                    search_term in log.created_at.strftime("%Y-%m-%d %H:%M:%S").lower()
+                )
+            ]
+        else:
+            filtered_logs = all_logs
+
+        paginator = Paginator(filtered_logs, 25)  # Show 25 logs per page
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+
+        html = render_to_string(
+            'logs_table.html',  # We'll create this partial template
+            {'page_obj': page_obj},
+            request=request
+        )
+        
+        return JsonResponse({
+            'html': html,
+            'has_next': page_obj.has_next(),
+            'has_previous': page_obj.has_previous(),
+            'current_page': page_obj.number,
+            'total_pages': paginator.num_pages,
+            'total_results': len(filtered_logs)
+        })
+
+    # Regular page load
+    logs = LogEntry.objects.all().order_by('-created_at')
+    paginator = Paginator(logs, 25)
+    page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
+    
     return render(request, 'logs.html', {'page_obj': page_obj})
 
 
@@ -1394,47 +1449,151 @@ def logs_view(request):
 
 @login_required
 def movie_list(request):
-    access_token = request.session.get('jellyfin_access_token')
-    if not access_token:
-        return redirect('login')  # Redirect to your login view if no access token is found
-    
     try:
+        # Get configuration with error handling
         config = Config.objects.first()
-        server_url = config.server_url
-    except Config.DoesNotExist:
-        return render(request, 'error.html', {'error': 'Server configuration not found.'})
-    
-    movies_url = f"{server_url}/Items"
+        if not config:
+            messages.error(request, "Configuration not found.")
+            return redirect('home')
 
-    headers = {
-        'X-Emby-Token': access_token,
-        'Content-Type': 'application/json',
-    }
+        server_url = config.server_url.rstrip('/')
+        api_key = config.jellyfin_api_key
+        tmdb_api_key = config.tmdb_api_key
 
-    params = {
-        'IncludeItemTypes': 'Movie',
-        'Recursive': True,
-        'Fields': 'PrimaryImageAspectRatio,ImageTags',
-        'StartIndex': 0,
-        'Limit': 1000,  # Large limit to fetch all movies
-    }
+        # Get access token with error handling
+        access_token = request.session.get('jellyfin_access_token')
+        if not access_token:
+            messages.error(request, "Session expired. Please login again.")
+            return redirect('login')
 
-    try:
-        response = requests.get(movies_url, headers=headers, params=params)
+        headers = {
+            'X-MediaBrowser-Token': api_key,
+            'X-Emby-Token': access_token,
+        }
+
+        # Handle AJAX search requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            search_term = request.GET.get('search', '').strip()
+            
+            # First, get ALL movies from Jellyfin to have their IDs available
+            all_movies_response = requests.get(
+                f'{server_url}/Items',
+                headers=headers,
+                params={
+                    'IncludeItemTypes': 'Movie',
+                    'Recursive': 'true',
+                    'Fields': 'PrimaryImageAspectRatio,BasicSyncInfo,ImageTags,ProviderIds',
+                    'ImageTypeLimit': 1,
+                    'EnableImageTypes': 'Primary,Backdrop,Banner,Thumb',
+                }
+            )
+            all_movies_response.raise_for_status()
+            all_jellyfin_movies = all_movies_response.json().get('Items', [])
+
+            # Create a mapping of TMDB IDs to Jellyfin movies
+            jellyfin_movie_map = {}
+            for movie in all_jellyfin_movies:
+                provider_ids = movie.get('ProviderIds', {})
+                tmdb_id = provider_ids.get('Tmdb')
+                if tmdb_id:
+                    jellyfin_movie_map[str(tmdb_id)] = movie
+
+            # Search TMDB first to get the correct ID
+            if tmdb_api_key:
+                tmdb_url = 'https://api.themoviedb.org/3/search/movie'
+                tmdb_params = {
+                    'api_key': tmdb_api_key,
+                    'query': search_term,
+                    'language': 'en-US',
+                    'page': 1
+                }
+                
+                tmdb_response = requests.get(tmdb_url, params=tmdb_params)
+                tmdb_response.raise_for_status()
+                tmdb_data = tmdb_response.json()
+                
+                # Process TMDB results
+                tmdb_movies = []
+                jellyfin_matches = []
+
+                for movie in tmdb_data.get('results', [])[:6]:
+                    if not movie['title'] or 'untitled' in movie['title'].lower():
+                        continue
+                    
+                    tmdb_id = str(movie['id'])
+                    
+                    # Check if we have this movie in Jellyfin
+                    if tmdb_id in jellyfin_movie_map:
+                        jellyfin_matches.append(jellyfin_movie_map[tmdb_id])
+                    else:
+                        if not movie['release_date']:
+                            continue
+                        tmdb_movies.append({
+                            'Name': movie['title'],
+                            'ProductionYear': movie['release_date'][:4] if movie['release_date'] else None,
+                            'ImageTags': {'Primary': True} if movie['poster_path'] else {},
+                            'Id': f"tmdb_{movie['id']}",
+                            'PosterPath': movie['poster_path'],
+                            'IsFromTMDB': True,
+                            'TMDBId': tmdb_id
+                        })
+                
+                # If we found matches in Jellyfin, use those; otherwise, show TMDB results
+                if jellyfin_matches:
+                    movies = jellyfin_matches
+                else:
+                    movies = tmdb_movies
+
+            html = render_to_string(
+                'movie_grid.html',
+                {
+                    'movies': movies,
+                    'config': config,
+                    'tmdb_base_url': 'https://image.tmdb.org/t/p/w500',
+                    'jellyseerr_url': config.jellyseerr_url  # Add this line
+                },
+                request=request
+            )
+
+            return JsonResponse({
+                'html': html,
+                'total_results': len(movies),
+                'has_tmdb_results': bool(tmdb_movies) if 'tmdb_movies' in locals() else False
+            })
+
+        # Regular page load
+        response = requests.get(
+            f'{server_url}/Items',
+            headers=headers,
+            params={
+                'IncludeItemTypes': 'Movie',
+                'Recursive': 'true',
+                'Fields': 'PrimaryImageAspectRatio,BasicSyncInfo,ImageTags',
+                'ImageTypeLimit': 1,
+                'EnableImageTypes': 'Primary,Backdrop,Banner,Thumb',
+                'SortBy': 'SortName',
+                'SortOrder': 'Ascending'
+            }
+        )
         response.raise_for_status()
-        movies_data = response.json().get('Items', [])
-    except requests.exceptions.RequestException as e:
-        return render(request, 'error.html', {'error': str(e)})
+        movies = response.json().get('Items', [])
+        
+        # Mark all movies as not from TMDB (they're from Jellyfin)
+        for movie in movies:
+            movie['IsFromTMDB'] = False
+        
+        paginator = Paginator(movies, 50)
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
 
-    paginator = Paginator(movies_data, 50)  # Paginate with 100 movies per page
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+        return render(request, 'movie_list.html', {
+            'page_obj': page_obj,
+            'config': config
+        })
 
-    return render(request, 'movie_list.html', {
-        'page_obj': page_obj,
-        'config': config,
-        'all_movies': json.dumps(movies_data),  # Convert to JSON string
-    })
+    except Exception as e:
+        messages.error(request, str(e))
+        return redirect('home')
 
 
 @login_required
@@ -1598,44 +1757,51 @@ def sessions_page(request):
 def series_list(request):
     access_token = request.session.get('jellyfin_access_token')
     if not access_token:
-        return redirect('login')  # Redirect to your login view if no access token is found
-    
+        return redirect('login')
+
     try:
         config = Config.objects.first()
         server_url = config.server_url
     except Config.DoesNotExist:
         return render(request, 'error.html', {'error': 'Server configuration not found.'})
     
-    movies_url = f"{server_url}/Items"
-
+    series_url = f"{server_url}/Users/{request.user.jellyfin_user_id}/Items"
+    
     headers = {
-        'X-Emby-Token': access_token,
-        'Content-Type': 'application/json',
-    }
-
+                'X-MediaBrowser-Token': access_token
+            }
+            
     params = {
-        'IncludeItemTypes': 'Series',
-        'Recursive': True,
-        'Fields': 'PrimaryImageAspectRatio,ImageTags',
-        'StartIndex': 0,
-        'Limit': 1000,  # Large limit to fetch all movies
+                'IncludeItemTypes': 'Series',
+                'Recursive': 'true',
+        'Fields': 'PrimaryImageAspectRatio,BasicSyncInfo,ImageTags,Overview,ProductionYear',
+                'ImageTypeLimit': 1,
+                'EnableImageTypes': 'Primary',
+        'SortBy': 'SortName',
+        'SortOrder': 'Ascending'
     }
 
     try:
-        response = requests.get(movies_url, headers=headers, params=params)
+        response = requests.get(series_url, headers=headers, params=params)
         response.raise_for_status()
-        movies_data = response.json().get('Items', [])
+        series_data = response.json().get('Items', [])
     except requests.exceptions.RequestException as e:
         return render(request, 'error.html', {'error': str(e)})
 
-    paginator = Paginator(movies_data, 50)  # Paginate with 100 movies per page
+    # Handle search
+    search_query = request.GET.get('search', '').lower()
+    if search_query:
+        series_data = [show for show in series_data if search_query in show.get('Name', '').lower()]
+
+    # Pagination
+    paginator = Paginator(series_data, 24)  # Show 24 series per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-
+                
     return render(request, 'tv-shows.html', {
-        'page_obj': page_obj,
+                    'page_obj': page_obj,
         'config': config,
-        'all_movies': json.dumps(movies_data),  # Convert to JSON string
+        'search_query': search_query
     })
 
 
@@ -1951,7 +2117,7 @@ def update_is_disabled(request):
         update_policy_url = f'{server_url}/Users/{user_id}/Policy'
         response = requests.post(update_policy_url, json=updated_policy_data, headers=headers)
         if response.status_code == 204:
-            messages.success(request, "User updated")
+            #messages.success(request, "User updated")
             return JsonResponse({'success': True})
         else:
             return JsonResponse({
@@ -1961,3 +2127,173 @@ def update_is_disabled(request):
 
     except requests.RequestException as e:
         return JsonResponse({'success': False, 'error': f"Failed to connect to Jellyfin server: {str(e)}"})
+
+def log_error(action, message, user=None):
+    """Helper function to log errors"""
+    LogEntry.objects.create(
+        action=action,
+        message=message,
+        user=user
+    )
+
+def log_info(action, message, user=None):
+    """Helper function to log information"""
+    LogEntry.objects.create(
+        action=action,
+        message=message,
+        user=user
+    )
+
+def normalize_title(title):
+    """Helper function to normalize movie titles for comparison"""
+    # Convert numbers to words (up to 10)
+    number_map = {
+        '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four',
+        '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine'
+    }
+    
+    # Normalize the title
+    title = title.lower()
+    
+    # Remove special characters and extra whitespace
+    title = re.sub(r'[^\w\s]', '', title)
+    title = ' '.join(title.split())
+    
+    # Create word and number versions
+    title_with_numbers = title
+    title_with_words = title
+    
+    # Replace numbers with words and vice versa
+    for num, word in number_map.items():
+        title_with_words = re.sub(r'\b' + num + r'\b', word, title_with_words)
+        title_with_numbers = re.sub(r'\b' + word + r'\b', num, title_with_numbers)
+    
+    # Remove common words
+    words_to_remove = ['untitled', 'the', 'a', 'an', 'spinoff', 'spin-off', 'none']
+    words = [w for w in title.split() if w.lower() not in words_to_remove]
+    
+    return {
+        'original': title,
+        'with_numbers': title_with_numbers,
+        'with_words': title_with_words,
+        'words': words
+    }
+
+def titles_match(search_title, movie_title):
+    """Check if titles match using various methods"""
+    search_norm = normalize_title(search_title)
+    movie_norm = normalize_title(movie_title)
+    
+    # Direct matches
+    if any(s in movie_norm['original'] for s in [search_norm['original'], search_norm['with_numbers'], search_norm['with_words']]):
+        return True
+    
+    # Word matches (check if all search words appear in movie title)
+    search_words = set(search_norm['words'])
+    movie_words = set(movie_norm['words'])
+    
+    # Check if all search words are in movie title
+    if all(any(search_word in movie_word for movie_word in movie_words) for search_word in search_words):
+        return True
+    
+    return False
+
+@login_required
+def proxy_jellyseerr_request(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    config = Config.objects.first()
+    if not config or not config.jellyseerr_url or not config.jellyseerr_api_key:
+        return JsonResponse({'error': 'Jellyseerr configuration not found'}, status=400)
+
+    try:
+        # Get the request data from the body
+        request_data = json.loads(request.body)
+        
+        # Log the request for debugging
+        print("Jellyseerr Request Data:", request_data)
+        print("Jellyseerr URL:", config.jellyseerr_url)
+        
+        # Forward the request to Jellyseerr
+        response = requests.post(
+            f'{config.jellyseerr_url.rstrip("/")}/api/v1/request',
+            headers={
+                'X-Api-Key': config.jellyseerr_api_key,
+                'Content-Type': 'application/json'
+            },
+            json=request_data,
+            timeout=10  # Add timeout
+        )
+        
+        # Log the response for debugging
+        print("Jellyseerr Response:", response.status_code)
+        print("Jellyseerr Response Content:", response.text)
+        
+        if response.status_code == 400:
+            return JsonResponse({
+                'error': 'Bad request to Jellyseerr',
+                'details': response.text
+            }, status=400)
+            
+        response.raise_for_status()
+        return JsonResponse(response.json() if response.text else {'success': True}, 
+                          status=response.status_code)
+                          
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
+    except requests.RequestException as e:
+        return JsonResponse({
+            'error': 'Failed to connect to Jellyseerr',
+            'details': str(e)
+        }, status=500)
+    except Exception as e:
+        return JsonResponse({
+            'error': 'Unexpected error',
+            'details': str(e)
+        }, status=500)
+
+@login_required
+def search_tmdb_shows(request):
+    config = Config.objects.first()
+    if not config:
+        return JsonResponse({'error': 'Configuration not found'}, status=404)
+
+    search_query = request.GET.get('query', '')
+    if not search_query:
+        return JsonResponse({'results': []})
+
+    try:
+        tmdb_url = "https://api.themoviedb.org/3/search/tv"
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {config.tmdb_access_token}"
+        }
+        params = {
+            "query": search_query,
+            "include_adult": "false",
+            "language": "en-US",
+            "page": 1
+        }
+
+        response = requests.get(tmdb_url, headers=headers, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        # Transform the results to match your needs
+        shows = [{
+            'Name': show['name'],
+            'ProductionYear': show.get('first_air_date', '')[:4],
+            'PosterPath': show.get('poster_path'),
+            'TMDBId': show['id'],
+            'Overview': show.get('overview', ''),
+            'IsFromTMDB': True
+        } for show in data.get('results', [])]
+
+        return JsonResponse({
+            'results': shows,
+            'tmdb_base_url': 'https://image.tmdb.org/t/p/w500'
+        })
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

@@ -1,0 +1,71 @@
+<!-- Table Content -->
+<table class="uk-table uk-table-divider uk-table-hover uk-table-middle uk-table-small" id="log-table">
+    <thead>
+        <tr>
+            <th>Action</th>
+            <th>User</th>
+            <th>Message</th>
+            <th>Timestamp</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if page_obj %}
+            {% for log in page_obj %}
+            <tr>
+                <td>
+                    {% if log.action == "LOGIN" %}
+                    <span class="uk-label uk-label-primary">
+                        <span uk-icon="sign-in" class="uk-margin-small-right"></span>Login
+                    </span>
+                    {% elif log.action == "CREATED" %}
+                    <span class="uk-label uk-label-success">
+                        <span uk-icon="plus" class="uk-margin-small-right"></span>Created
+                    </span>
+                    {% elif log.action == "SETUP" %}
+                    <span class="uk-label uk-label-warning">
+                        <span uk-icon="settings" class="uk-margin-small-right"></span>Setup
+                    </span>
+                    {% elif log.action == "DELETED" %}
+                    <span class="uk-label uk-label-danger">
+                        <span uk-icon="trash" class="uk-margin-small-right"></span>Deleted
+                    </span>
+                    {% elif log.action == "ERROR" %}
+                    <span class="uk-label uk-label-danger">
+                        <span uk-icon="warning" class="uk-margin-small-right"></span>Error
+                    </span>
+                    {% elif log.action == "INFO" %}
+                    <span class="uk-label uk-label-primary">
+                        <span uk-icon="info" class="uk-margin-small-right"></span>Info
+                    </span>
+                    {% elif log.action == "WARNING" %}
+                    <span class="uk-label uk-label-warning">
+                        <span uk-icon="warning" class="uk-margin-small-right"></span>Warning
+                    </span>
+                    {% else %}
+                    <span class="uk-label">
+                        <span uk-icon="info" class="uk-margin-small-right"></span>{{ log.get_action_display }}
+                    </span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="uk-text-small">
+                        <span uk-icon="user" class="uk-margin-small-right"></span>
+                        {{ log.user }}
+                    </span>
+                </td>
+                <td>{{ log.message }}</td>
+                <td>
+                    <span class="uk-text-small">
+                        <span uk-icon="clock" class="uk-margin-small-right"></span>
+                        {{ log.created_at|date:"Y-m-d H:i:s" }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td colspan="4" class="uk-text-center">No log entries found.</td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table> 

@@ -3,12 +3,11 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="uk-container uk-margin-large-top uk-margin-large-bottom">
-
-    <!-- Welcome Card -->
-    <div class="uk-card uk-box-shadow-medium uk-border-rounded uk-padding-large" style="background: linear-gradient(345deg, #77b1efab, #3b009b); color: #fff;">
-        <h1 class="uk-heading-medium uk-text-center" style="text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);">Welcome {{ username }}</h1>
-        <p class="uk-text-center uk-text-lead">
+<div class="uk-container">
+    <!-- Welcome Section -->
+    <div class="settings-card uk-margin-medium-bottom">
+        <h1 class="uk-heading-medium uk-text-center uk-margin-remove">Welcome {{ username }}</h1>
+        <p class="uk-text-center uk-text-lead uk-margin-remove-top">
             {% if is_superuser %}
                 Manage your Jellyfin users, invitations, and settings here.
             {% else %}
@@ -17,193 +16,267 @@
         </p>
     </div>
 
-    <!-- Quick Access Buttons -->
-    <div class="uk-grid uk-grid-large uk-child-width-1-3@s uk-flex-center uk-margin-top" uk-grid>
+    <!-- Quick Access Cards -->
+    <div class="uk-grid uk-grid-medium uk-child-width-1-3@m uk-margin" uk-grid>
         {% if is_superuser %}
         <div>
-            <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
-                <h3 class="uk-card-title uk-text-center">
-                    <span uk-icon="icon: users"></span> Users
-                </h3>
-                <p class="uk-text-center">View and manage user accounts.</p>
-                <div class="uk-flex uk-flex-center">
-                    <a href="{% url 'view_users' %}" class="uk-button uk-button-primary uk-button-large">Manage Users</a>
-                </div>
+            <div class="quick-access-card uk-text-center uk-transition-toggle" tabindex="0">
+                <span uk-icon="icon: users; ratio: 2.5" class="uk-margin-small-bottom uk-transition-scale-up"></span>
+                <h3 class="uk-card-title uk-margin-small">Users</h3>
+                <p class="uk-margin-small">View and manage user accounts.</p>
+                <a href="{% url 'view_users' %}" class="uk-button uk-button-primary uk-transition-slide-bottom">
+                    Manage Users
+                </a>
             </div>
         </div>
         {% endif %}
         <div>
-            <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
-                <h3 class="uk-card-title uk-text-center">
-                    <span uk-icon="icon: social"></span> Invitations
-                </h3>
-                <p class="uk-text-center">Create and manage invite codes.</p>
-                <div class="uk-flex uk-flex-center">
-                    <a href="{% url 'invitation_list' %}" class="uk-button uk-button-primary uk-button-large">Manage Invitations</a>
-                </div>
+            <div class="quick-access-card uk-text-center uk-transition-toggle" tabindex="0">
+                <span uk-icon="icon: social; ratio: 2.5" class="uk-margin-small-bottom uk-transition-scale-up"></span>
+                <h3 class="uk-card-title uk-margin-small">Invitations</h3>
+                <p class="uk-margin-small">Create and manage invite codes.</p>
+                <a href="{% url 'invitation_list' %}" class="uk-button uk-button-primary uk-transition-slide-bottom">
+                    Manage Invitations
+                </a>
             </div>
         </div>
         {% if is_superuser %}
         <div>
-            <div class="uk-card uk-card-hover uk-card-secondary uk-card-body uk-border-rounded">
-                <h3 class="uk-card-title uk-text-center">
-                    <span uk-icon="icon: settings"></span> Settings
-                </h3>
-                <p class="uk-text-center">Configure server settings.</p>
-                <div class="uk-flex uk-flex-center">
-                    <a href="{% url 'settings' %}" class="uk-button uk-button-primary uk-button-large">View Settings</a>
-                </div>
+            <div class="quick-access-card uk-text-center uk-transition-toggle" tabindex="0">
+                <span uk-icon="icon: settings; ratio: 2.5" class="uk-margin-small-bottom uk-transition-scale-up"></span>
+                <h3 class="uk-card-title uk-margin-small">Settings</h3>
+                <p class="uk-margin-small">Configure server settings.</p>
+                <a href="{% url 'settings' %}" class="uk-button uk-button-primary uk-transition-slide-bottom">
+                    View Settings
+                </a>
             </div>
         </div>
         {% endif %}
     </div>
 
-    <!-- System Status Section -->
-    <div class="uk-margin-large-top">
+    <!-- System Stats Section -->
+    <div class="uk-margin-medium-top">
         <h2 class="uk-heading-line uk-text-center"><span>System Stats</span></h2>
-        <div class="uk-grid uk-grid-match uk-child-width-1-3@m" uk-grid>
+        <div class="uk-grid uk-grid-medium uk-child-width-1-3@m" uk-grid>
             {% if is_superuser %}
             <div>
-                <div class="uk-card uk-card-default uk-card-body uk-border-rounded uk-box-shadow-small">
+                <div class="settings-card">
                     <h3 class="uk-card-title">
-                        <span uk-icon="icon: server"></span> Jellyfin Server
+                        <span uk-icon="icon: server" class="uk-margin-small-right"></span>
+                        Jellyfin Server
                     </h3>
                     <p>Status: <strong>{{ server_status }}</strong></p>
-                    <p>Version: <strong>{{ server_version }}</strong></p>
+                    <p class="uk-margin-remove">Version: <strong>{{ server_version }}</strong></p>
                 </div>
             </div>
             <div>
-                <div class="uk-card uk-card-default uk-card-body uk-border-rounded uk-box-shadow-small">
+                <div class="settings-card">
                     <h3 class="uk-card-title">
-                        <span uk-icon="icon: users"></span> User Statistics
+                        <span uk-icon="icon: users" class="uk-margin-small-right"></span>
+                        User Statistics
                     </h3>
                     <p>Total Users: <strong>{{ total_users }}</strong></p>
-                    <p>Active Sessions: <strong>{{ active_sessions }}</strong></p>
+                    <p class="uk-margin-remove">Active Sessions: <strong>{{ active_sessions }}</strong></p>
                 </div>
             </div>
             {% endif %}
             <div>
-                <div class="uk-card uk-card-default uk-card-body uk-border-rounded uk-box-shadow-small">
+                <div class="settings-card">
                     <h3 class="uk-card-title">
-                        <span uk-icon="icon: film"></span> Media Statistics
+                        <span uk-icon="icon: film" class="uk-margin-small-right"></span>
+                        Media Statistics
                     </h3>
                     <p>Total Movies: <strong>{{ total_movies }}</strong></p>
-                    <p>Total TV Series: <strong>{{ total_series }}</strong></p>
+                    <p class="uk-margin-remove">Total TV Series: <strong>{{ total_series }}</strong></p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Latest Media Sections -->
-    <div class="uk-margin-large-top">
+    <!-- Latest Movies Section -->
+    <div class="uk-margin-medium-top">
         <h2 class="uk-heading-line uk-text-center"><span>Latest Movies</span></h2>
-        <div class="uk-grid uk-child-width-1-4@m uk-child-width-1-2@s uk-flex-center" uk-grid>
+        <div class="uk-grid uk-grid-small uk-child-width-1-2@s uk-child-width-1-4@m uk-child-width-1-6@l uk-child-width-1-8@xl" uk-grid>
             {% for movie in latest_movies %}
-            <div>
-                <a href="{% url 'movie_detail' movie.Id %}" class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded uk-box-shadow-medium">
+            <div class="movie-card" data-title="{{ movie.Name|lower }}">
+                <div class="uk-inline uk-width-1-1 movie-container">
                     {% if movie.ImageTags.Primary %}
-                    <img src="{{ config.server_url }}Items/{{ movie.Id }}/Images/Primary?tag={{ movie.ImageTags.Primary }}&quality=90&maxWidth=300" alt="{{ movie.Name }}" class="uk-margin-small-bottom uk-width-1-1 uk-box-shadow-small">
+                    <img src="{{ config.server_url }}Items/{{ movie.Id }}/Images/Primary?tag={{ movie.ImageTags.Primary }}"
+                         alt="{{ movie.Name }}" 
+                         class="movie-poster">
                     {% else %}
-                    <img src="{% static 'images/no-image.png' %}" alt="No image available" class="uk-margin-small-bottom uk-width-1-1 uk-box-shadow-small">
+                    <div class="uk-height-medium uk-background-muted uk-flex uk-flex-center uk-flex-middle">
+                        <span uk-icon="icon: image; ratio: 3"></span>
+                    </div>
                     {% endif %}
-                    <h3 class="uk-card-title uk-text-center">{{ movie.Name }}</h3>
-                    <p class="uk-text-center">{{ movie.ProductionYear }}</p>
-                </a>
+                    
+                    <!-- Overlay -->
+                    <div class="movie-overlay uk-overlay-primary uk-position-cover uk-transition-fade">
+                        <div class="uk-position-center uk-text-center">
+                            <h4 class="uk-margin-small-bottom uk-text-small">{{ movie.Name }}</h4>
+                            <p class="uk-margin-remove uk-text-small">{{ movie.ProductionYear }}</p>
+                            <a href="{% url 'movie_detail' movie.Id %}" 
+                               class="uk-button uk-button-primary uk-button-small uk-margin-small-top">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
             {% empty %}
-            <p class="uk-text-center">No latest media available.</p>
+            <div class="uk-width-1-1 uk-text-center">
+                <p>No latest movies available.</p>
+            </div>
             {% endfor %}
         </div>
     </div>
-       <!-- Latest Series Section -->
-       <div class="uk-margin-large-top">
+
+    <!-- Latest Series Section -->
+    <div class="uk-margin-medium-top">
         <h2 class="uk-heading-line uk-text-center"><span>Latest Series</span></h2>
-        <div class="uk-grid uk-child-width-1-4@m uk-child-width-1-2@s uk-flex-center" uk-grid>
+        <div class="uk-grid uk-grid-small uk-child-width-1-2@s uk-child-width-1-4@m uk-child-width-1-6@l uk-child-width-1-8@xl" uk-grid>
             {% for series in latest_shows %}
-            <div>
-                <a href="{% url 'series-detail' series.Id %}" class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded card-fixed-height">
+            <div class="movie-card" data-title="{{ series.Name|lower }}">
+                <div class="uk-inline uk-width-1-1 movie-container">
                     {% if series.ImageTags.Primary %}
-                    <img src="{{ config.server_url }}Items/{{ series.Id }}/Images/Primary?tag={{ series.ImageTags.Primary }}&quality=90&maxWidth=300"
-                        alt="{{ series.Name }}" class="uk-margin-small-bottom uk-width-1-1">
+                    <img src="{{ config.server_url }}Items/{{ series.Id }}/Images/Primary?tag={{ series.ImageTags.Primary }}"
+                         alt="{{ series.Name }}" 
+                         class="movie-poster">
                     {% else %}
-                    <img src="{% static 'images/no-image.png' %}" alt="No image available"
-                        class="uk-margin-small-bottom uk-width-1-1">
+                    <div class="uk-height-medium uk-background-muted uk-flex uk-flex-center uk-flex-middle">
+                        <span uk-icon="icon: image; ratio: 3"></span>
+                    </div>
                     {% endif %}
-                    <h3 class="uk-card-title uk-text-center">{{ series.Name }}</h3>
-                    <p class="uk-text-center">{{ series.ProductionYear }}</p>
-                </a>
+                    
+                    <!-- Overlay -->
+                    <div class="movie-overlay uk-overlay-primary uk-position-cover uk-transition-fade">
+                        <div class="uk-position-center uk-text-center">
+                            <h4 class="uk-margin-small-bottom uk-text-small">{{ series.Name }}</h4>
+                            <p class="uk-margin-remove uk-text-small">{{ series.ProductionYear }}</p>
+                            <a href="{% url 'series-detail' series.Id %}" 
+                               class="uk-button uk-button-primary uk-button-small uk-margin-small-top">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
             {% empty %}
-            <p class="uk-text-center">No latest series available.</p>
+            <div class="uk-width-1-1 uk-text-center">
+                <p>No latest series available.</p>
+            </div>
             {% endfor %}
         </div>
     </div>
+
     {% if is_superuser %}
     <!-- Recent Activity Section -->
-    <div class="uk-margin-large-top custom-white-box" >
+    <div class="uk-margin-medium-top">
         <h2 class="uk-heading-line uk-text-center"><span>Recent Activity</span></h2>
-
-        <table class="uk-table uk-table-divider uk-table-hover uk-table-middle uk-table-small uk-table-responsive">
-            <thead>
-                <tr>
-                    <th class="uk-width-small">Action</th>
-                    <th class="uk-width-small">User</th>
-                    <th class="uk-width-medium">Message</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for entry in recent_log_entries %}
-                <tr>
-                    <td>
-                        {% if entry.action == "LOGIN" %}
-                        <span class="uk-label uk-label-primary">
-                            <i class="fas fa-sign-in-alt" style="margin-right: 5px;"></i> Login
-                        </span>
-                        {% elif entry.action == "CREATED" %}
-                        <span class="uk-label uk-label-success">
-                            <i class="fas fa-plus-circle" style="margin-right: 5px;"></i> Created
-                        </span>
-                        {% elif entry.action == "DELETED" %}
-                        <span class="uk-label uk-label-danger">
-                            <i class="fas fa-trash" style="margin-right: 5px;"></i> Deleted
-                        </span>
-                        {% elif entry.action == "ERROR" %}
-                        <span class="uk-label uk-label-danger">
-                            <i class="fas fa-times-circle" style="margin-right: 5px;"></i> Error
-                        </span>
-                        {% elif entry.action == "INFO" %}
-                        <span class="uk-label uk-label-primary">
-                            <i class="fas fa-info-circle" style="margin-right: 5px;"></i> Info
-                        </span>
-                        {% elif entry.action == "WARNING" %}
-                        <span class="uk-label uk-label-warning">
-                            <i class="fas fa-exclamation-triangle" style="margin-right: 5px;"></i> Warning
-                        </span>
-                        {% elif entry.action == "SETUP" %}
-                        <span class="uk-label uk-label-warning">
-                            <i class="fas fa-clipboard-list" style="margin-right: 5px;"></i> Setup
-                        </span>
-                        {% else %}
-                        <span class="uk-label uk-label-default">
-                            <i class="fas fa-clipboard-list" style="margin-right: 5px;"></i> {{ entry.get_action_display }}
-                        </span>
-                        {% endif %}
-                    </td>
-                    <td>{{ entry.user }}</td>
-                    <td>{{ entry.message }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4" class="uk-text-center">No recent activity.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="settings-card">
+            <table class="uk-table uk-table-divider uk-table-hover uk-table-middle uk-table-small uk-table-responsive">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>User</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in recent_log_entries %}
+                    <tr>
+                        <td>
+                            {% if entry.action == "LOGIN" %}
+                            <span class="uk-label uk-label-primary">
+                                <span uk-icon="sign-in"></span> Login
+                            </span>
+                            {% elif entry.action == "CREATED" %}
+                            <span class="uk-label uk-label-success">
+                                <span uk-icon="plus"></span> Created
+                            </span>
+                            {% elif entry.action == "DELETED" %}
+                            <span class="uk-label uk-label-danger">
+                                <span uk-icon="trash"></span> Deleted
+                            </span>
+                            {% elif entry.action == "ERROR" %}
+                            <span class="uk-label uk-label-danger">
+                                <span uk-icon="warning"></span> Error
+                            </span>
+                            {% elif entry.action == "INFO" %}
+                            <span class="uk-label uk-label-primary">
+                                <span uk-icon="info"></span> Info
+                            </span>
+                            {% elif entry.action == "WARNING" %}
+                            <span class="uk-label uk-label-warning">
+                                <span uk-icon="warning"></span> Warning
+                            </span>
+                            {% elif entry.action == "SETUP" %}
+                            <span class="uk-label uk-label-warning">
+                                <span uk-icon="settings"></span> Setup
+                            </span>
+                            {% else %}
+                            <span class="uk-label">
+                                <span uk-icon="info"></span> {{ entry.get_action_display }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>{{ entry.user }}</td>
+                        <td>{{ entry.message }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="uk-text-center">No recent activity.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     {% endif %}
 </div>
 
-    <!-- Additional Sections can follow similar patterns -->
+<style>
+    .quick-access-card {
+        background: linear-gradient(145deg, var(--card-bg), var(--sidebar-bg));
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 30px 20px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
 
-</div>
+    .quick-access-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .quick-access-card .uk-card-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .quick-access-card p {
+        color: var(--text-color);
+        opacity: 0.8;
+    }
+
+    .quick-access-card [uk-icon] {
+        color: var(--text-color);
+        opacity: 0.9;
+        margin-bottom: 15px;
+        display: inline-block;
+    }
+
+    .quick-access-card .uk-button {
+        margin-top: 10px;
+        border-radius: 6px;
+        padding: 5px 20px;
+        font-weight: 500;
+    }
+
+    [data-theme="dark"] .quick-access-card {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    }
+</style>
 {% endblock %}

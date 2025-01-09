@@ -1,39 +1,164 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}Devices{% endblock %}
-{% load custom_filters %}
+
 {% block content %}
-<div class="uk-container uk-margin-large-top">
-    <h1 class="uk-heading-line uk-text-center"><span>Devices</span></h1>
+<div class="uk-container uk-container-expand uk-margin-medium-top" style="background: transparent;">
+    <h2 class="uk-heading-line uk-text-center uk-margin-medium-bottom"><span>Connected Devices</span></h2>
 
     {% if devices %}
-    <div class="uk-grid-match uk-child-width-1-2@s uk-child-width-1-3@m uk-margin-top" uk-grid>
+    <div class="uk-grid uk-grid-medium uk-child-width-1-2@s uk-child-width-1-3@m uk-child-width-1-4@l" uk-grid>
         {% for device in devices %}
         <div>
-            <div class="uk-card uk-card-default uk-card-hover uk-card-body uk-border-rounded">
-                <div class="uk-card-media-top">
-                    {% if device.IconUrl %}
-                    <img src="{{ device.IconUrl }}" alt="{{ device.Name }}" class="uk-width-1-1">
-                    {% else %}
-                    <div class="uk-flex uk-flex-center uk-flex-middle" style="height: 200px; background-color: #f0f0f0;">
-                        <span uk-icon="icon: desktop; ratio: 2" class="uk-text-muted"></span>
+            <div class="uk-card uk-card-default uk-card-hover uk-border-rounded device-card">
+                <div class="uk-card-media-top uk-position-relative">
+                    <div class="device-image-container">
+                        {% if device.IconUrl %}
+                        <img src="{{ device.IconUrl }}" 
+                             alt="{{ device.Name }}" 
+                             class="device-image">
+                        {% else %}
+                        <div class="device-placeholder">
+                            <span uk-icon="icon: desktop; ratio: 3"></span>
+                        </div>
+                        {% endif %}
+                        <div class="uk-position-top-right uk-margin-small">
+                            <span class="status-badge {% if device.DateLastActivity|is_recent %}success{% else %}warning{% endif %}">
+                                <span uk-icon="clock" class="uk-margin-small-right"></span>
+                                {{ device.DateLastActivity|time_ago }}
+                            </span>
+                        </div>
                     </div>
-                    {% endif %}
                 </div>
-                <h3 class="uk-card-title">{{ device.CustomName|default:device.Name }}</h3>
-                <p><strong>App Name:</strong> {{ device.AppName }}</p>
-                <p><strong>Last Activity:</strong> {{ device.DateLastActivity|iso_to_local }}</p>
-                <p><strong>Last User:</strong> {{ device.LastUserName }}</p>
+
+                <div class="uk-card-body">
+                    <h3 class="uk-card-title">{{ device.CustomName|default:device.Name }}</h3>
+                    
+                    <ul class="uk-list uk-list-divider">
+                        <li>
+                            <span uk-icon="desktop" class="uk-margin-small-right"></span>
+                            {{ device.AppName }}
+                        </li>
+                        <li>
+                            <span uk-icon="user" class="uk-margin-small-right"></span>
+                            {{ device.LastUserName|default:"No user" }}
+                        </li>
+                        <li>
+                            <span uk-icon="calendar" class="uk-margin-small-right"></span>
+                            {{ device.DateLastActivity|iso_to_local }}
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="uk-alert-warning" uk-alert>
+    <div class="uk-alert-warning uk-alert uk-border-rounded" uk-alert>
         <a class="uk-alert-close" uk-close></a>
-        No devices found.
+        <p><span uk-icon="warning" class="uk-margin-small-right"></span>No devices found.</p>
     </div>
     {% endif %}
 </div>
+
+<style>
+.device-card {
+    transition: transform 0.2s ease;
+    background: var(--card-bg);
+    max-width: 300px;
+    margin: 0 auto;
+    border: 1px solid var(--border-color);
+}
+
+.device-card:hover {
+    transform: translateY(-5px);
+    background: var(--card-bg);
+    border-color: var(--primary-color);
+}
+
+.device-image-container {
+    position: relative;
+    padding-top: 66.67%;
+    background-color: var(--hover-bg);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    overflow: hidden;
+}
+
+.device-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.device-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-color);
+    opacity: 0.5;
+}
+
+.status-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 12px;
+    color: white;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.status-badge.success {
+    background: linear-gradient(45deg, #77b1ef, #3b009b);
+}
+
+.status-badge.warning {
+    background: linear-gradient(45deg, #ffc107, #d39e00);
+}
+
+.uk-card-body {
+    background: var(--card-bg);
+    color: var(--text-color);
+    padding: 15px;
+}
+
+.uk-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-color);
+}
+
+.uk-list-divider>li:not(:first-child) {
+    border-top-color: var(--border-color);
+}
+
+.uk-list>li {
+    font-size: 0.9rem;
+    padding: 8px 0;
+    color: var(--text-color);
+}
+
+/* Remove UIkit's default card hover styles */
+.uk-card-default.uk-card-hover:hover {
+    background-color: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+[data-theme="dark"] .uk-card-default.uk-card-hover:hover {
+    background-color: var(--card-bg);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+</style>
 {% endblock %}

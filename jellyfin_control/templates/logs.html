@@ -3,123 +3,310 @@
 {% block title %}Log Entries{% endblock %}
 
 {% block content %}
-<div class="uk-container uk-margin-large-top">
-    <h1 class="uk-heading-line uk-text-center" style="padding-bottom: 5px;"><span>Log Entries</span></h1>
-    </div>
-<div class="uk-container uk-margin-large-top custom-white-box">
-    <!-- Search Input -->
-    <div class="uk-margin uk-flex uk-flex-center">
-        <input class="uk-input uk-width-1-3" id="log-search" type="text" placeholder="Search logs..." style="max-width: 50%;">
+<div class="uk-container">
+    <!-- Page Header -->
+    <div class="settings-card uk-margin-medium-bottom">
+        <h1 class="uk-heading-medium uk-margin-remove">Log Entries</h1>
+        
+        <!-- Search Input -->
+        <div class="uk-margin-medium-top">
+            <div class="uk-inline uk-width-1-2@m">
+                <span class="uk-form-icon" uk-icon="search"></span>
+                <input class="uk-input" 
+                       id="log-search" 
+                       type="text" 
+                       placeholder="Search all logs..." 
+                       aria-label="Search logs">
+                <div id="search-status" class="uk-text-small uk-text-muted uk-margin-small-top" style="display: none;">
+                    Searching...
+                </div>
+            </div>
+        </div>
     </div>
 
-    <table class="uk-table uk-table-divider uk-table-hover uk-table-middle uk-table-small uk-table-responsive" id="log-table">
-        <thead>
-            <tr>
-                <th class="uk-width-small">Action</th>
-                <th class="uk-width-small">User</th>
-                <th class="uk-width-medium">Message</th>
-                <th class="uk-width-small">Timestamp</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for log in page_obj %}
-            <tr>
-                <td>
-                    {% if log.action == "LOGIN" %}
-                        <span class="uk-label uk-label-primary">
-                            <i class="fas fa-sign-in-alt" style="margin-right: 5px;"></i> Login
-                        </span>
-                    {% elif log.action == "CREATED" %}
-                        <span class="uk-label uk-label-success">
-                            <i class="fas fa-plus-circle" style="margin-right: 5px;"></i> Created
-                        </span>
-                    {% elif log.action == "SETUP" %}
-                    <span class="uk-label uk-label-warning">
-                        <i class="fas fa-clipboard-list" style="margin-right: 5px;"></i> Setup
-                    </span>
-                    {% elif log.action == "DELETED" %}
-                        <span class="uk-label uk-label-danger">
-                            <i class="fas fa-trash" style="margin-right: 5px;"></i> Deleted
-                        </span>
-                    {% elif log.action == "ERROR" %}
-                        <span class="uk-label uk-label-danger">
-                            <i class="fas fa-times-circle" style="margin-right: 5px;"></i> Error
-                        </span>
-                    {% elif log.action == "INFO" %}
-                        <span class="uk-label uk-label-primary">
-                            <i class="fas fa-info-circle" style="margin-right: 5px;"></i> Info
-                        </span>
-                    {% elif log.action == "WARNING" %}
-                        <span class="uk-label uk-label-warning">
-                            <i class="fas fa-exclamation-triangle" style="margin-right: 5px;"></i> Warning
-                        </span>
-                    {% else %}
-                        <span class="uk-label uk-label-default">
-                            <i class="fas fa-clipboard-list" style="margin-right: 5px;"></i> {{ log.get_action_display }}
-                        </span>
-                    {% endif %}
-                </td>
-                
-                <td>{{ log.user }}</td>
-                <td>{{ log.message }}</td>
-                <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4" class="uk-text-center">No log entries found.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <!-- Log Table -->
+    <div class="settings-card">
+        <div class="uk-overflow-auto">
+            <table class="uk-table uk-table-divider uk-table-hover uk-table-middle uk-table-small" id="log-table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>User</th>
+                        <th>Message</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in page_obj %}
+                    <tr>
+                        <td>
+                            {% if log.action == "LOGIN" %}
+                            <span class="uk-label uk-label-primary">
+                                <span uk-icon="sign-in" class="uk-margin-small-right"></span>Login
+                            </span>
+                            {% elif log.action == "CREATED" %}
+                            <span class="uk-label uk-label-success">
+                                <span uk-icon="plus" class="uk-margin-small-right"></span>Created
+                            </span>
+                            {% elif log.action == "SETUP" %}
+                            <span class="uk-label uk-label-warning">
+                                <span uk-icon="settings" class="uk-margin-small-right"></span>Setup
+                            </span>
+                            {% elif log.action == "DELETED" %}
+                            <span class="uk-label uk-label-danger">
+                                <span uk-icon="trash" class="uk-margin-small-right"></span>Deleted
+                            </span>
+                            {% elif log.action == "ERROR" %}
+                            <span class="uk-label uk-label-danger">
+                                <span uk-icon="warning" class="uk-margin-small-right"></span>Error
+                            </span>
+                            {% elif log.action == "INFO" %}
+                            <span class="uk-label uk-label-primary">
+                                <span uk-icon="info" class="uk-margin-small-right"></span>Info
+                            </span>
+                            {% elif log.action == "WARNING" %}
+                            <span class="uk-label uk-label-warning">
+                                <span uk-icon="warning" class="uk-margin-small-right"></span>Warning
+                            </span>
+                            {% else %}
+                            <span class="uk-label">
+                                <span uk-icon="info" class="uk-margin-small-right"></span>{{ log.get_action_display }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="uk-text-small">
+                                <span uk-icon="user" class="uk-margin-small-right"></span>
+                                {{ log.user }}
+                            </span>
+                        </td>
+                        <td>{{ log.message }}</td>
+                        <td>
+                            <span class="uk-text-small">
+                                <span uk-icon="clock" class="uk-margin-small-right"></span>
+                                {{ log.created_at|date:"Y-m-d H:i:s" }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="uk-text-center">No log entries found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-    <!-- Pagination Controls -->
-    <div class="uk-margin-top uk-text-center">
-        <ul class="uk-pagination uk-flex-center" uk-margin>
-            {% if page_obj.has_previous %}
-                <li><a href="?page=1">First</a></li>
-                <li><a href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
-            {% else %}
-                <li class="uk-disabled"><span>First</span></li>
-                <li class="uk-disabled"><span>Previous</span></li>
-            {% endif %}
-            
-            {% for num in page_obj.paginator.page_range %}
-                {% if page_obj.number == num %}
-                    <li class="uk-active"><span>{{ num }}</span></li>
+        <!-- Pagination -->
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="uk-margin-medium-top uk-flex uk-flex-center">
+            <ul class="uk-pagination">
+                {% if page_obj.has_previous %}
+                <li><a href="?page=1"><span uk-pagination-previous></span><span uk-pagination-previous></span></a></li>
+                <li><a href="?page={{ page_obj.previous_page_number }}"><span uk-pagination-previous></span></a></li>
                 {% else %}
-                    <li><a href="?page={{ num }}">{{ num }}</a></li>
+                <li class="uk-disabled"><span><span uk-pagination-previous></span><span uk-pagination-previous></span></span></li>
+                <li class="uk-disabled"><span><span uk-pagination-previous></span></span></li>
                 {% endif %}
-            {% endfor %}
-            
-            {% if page_obj.has_next %}
-                <li><a href="?page={{ page_obj.next_page_number }}">Next</a></li>
-                <li><a href="?page={{ page_obj.paginator.num_pages }}">Last</a></li>
-            {% else %}
-                <li class="uk-disabled"><span>Next</span></li>
-                <li class="uk-disabled"><span>Last</span></li>
-            {% endif %}
-        </ul>
+                
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="uk-active"><span>{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li><a href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li><a href="?page={{ page_obj.next_page_number }}"><span uk-pagination-next></span></a></li>
+                <li><a href="?page={{ page_obj.paginator.num_pages }}"><span uk-pagination-next></span><span uk-pagination-next></span></a></li>
+                {% else %}
+                <li class="uk-disabled"><span><span uk-pagination-next></span></span></li>
+                <li class="uk-disabled"><span><span uk-pagination-next></span><span uk-pagination-next></span></span></li>
+                {% endif %}
+            </ul>
+        </div>
+        <div class="uk-text-center uk-text-small uk-text-muted">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </div>
+        {% endif %}
     </div>
 </div>
 
-<!-- JavaScript for Live Search -->
+<style>
+    .uk-label {
+        font-weight: 500;
+        padding: 3px 12px;
+        border-radius: 12px;
+        text-transform: none;
+    }
+
+    .uk-table th {
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        color: var(--text-color);
+    }
+
+    .uk-text-small {
+        color: var(--text-color);
+        opacity: 0.9;
+    }
+
+    .uk-pagination > li > a {
+        border-radius: 4px;
+    }
+
+    .uk-pagination > .uk-active > * {
+        border-radius: 4px;
+    }
+
+    .uk-form-icon {
+        color: var(--text-color);
+    }
+
+    .uk-input {
+        border-radius: 6px;
+    }
+
+    .uk-input:focus {
+        border-color: #1e87f0;
+    }
+</style>
+
 <script>
-    document.getElementById('log-search').addEventListener('input', function() {
-        let filter = this.value.toLowerCase();
-        let rows = document.querySelectorAll('#log-table tbody tr');
+let searchTimeout;
+const searchStatus = document.getElementById('search-status');
+const tableContainer = document.querySelector('.uk-overflow-auto');
+const paginationContainer = document.querySelector('.uk-margin-medium-top');
 
-        rows.forEach(function(row) {
-            let action = row.cells[0].innerText.toLowerCase();
-            let user = row.cells[1].innerText.toLowerCase();
-            let message = row.cells[2].innerText.toLowerCase();
-            let timestamp = row.cells[3].innerText.toLowerCase();
+function performSearch() {
+    const searchInput = document.getElementById('log-search');
+    const searchTerm = searchInput.value;
+    
+    // Show loading status
+    searchStatus.style.display = 'block';
+    searchStatus.textContent = 'Searching...';
 
-            if (action.includes(filter) || user.includes(filter) || message.includes(filter) || timestamp.includes(filter)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
+    // Perform AJAX request
+    fetch(`${window.location.pathname}?search=${encodeURIComponent(searchTerm)}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Update the table content
+        tableContainer.innerHTML = data.html;
+        
+        // Hide loading status
+        searchStatus.style.display = 'none';
+
+        // Update pagination
+        updatePagination(data.current_page, data.total_pages, searchTerm);
+
+        // Update URL without reloading
+        const url = new URL(window.location);
+        if (searchTerm) {
+            url.searchParams.set('search', searchTerm);
+        } else {
+            url.searchParams.delete('search');
+        }
+        window.history.pushState({}, '', url);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        searchStatus.textContent = 'Error performing search';
     });
+}
+
+function updatePagination(currentPage, totalPages, searchTerm) {
+    if (!totalPages) return;  // Don't update pagination if no pages
+
+    let paginationHtml = `
+        <div class="uk-margin-medium-top uk-flex uk-flex-center">
+            <ul class="uk-pagination">
+                ${currentPage > 1 ? `
+                    <li><a href="?page=1${searchTerm ? '&search=' + encodeURIComponent(searchTerm) : ''}"><span uk-pagination-previous></span><span uk-pagination-previous></span></a></li>
+                    <li><a href="?page=${currentPage - 1}${searchTerm ? '&search=' + encodeURIComponent(searchTerm) : ''}"><span uk-pagination-previous></span></a></li>
+                ` : `
+                    <li class="uk-disabled"><span><span uk-pagination-previous></span><span uk-pagination-previous></span></span></li>
+                    <li class="uk-disabled"><span><span uk-pagination-previous></span></span></li>
+                `}
+    `;
+
+    // Add page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === currentPage) {
+            paginationHtml += `<li class="uk-active"><span>${i}</span></li>`;
+        } else if (i > currentPage - 3 && i < currentPage + 3) {
+            paginationHtml += `<li><a href="?page=${i}${searchTerm ? '&search=' + encodeURIComponent(searchTerm) : ''}">${i}</a></li>`;
+        }
+    }
+
+    paginationHtml += `
+                ${currentPage < totalPages ? `
+                    <li><a href="?page=${currentPage + 1}${searchTerm ? '&search=' + encodeURIComponent(searchTerm) : ''}"><span uk-pagination-next></span></a></li>
+                    <li><a href="?page=${totalPages}${searchTerm ? '&search=' + encodeURIComponent(searchTerm) : ''}"><span uk-pagination-next></span><span uk-pagination-next></span></a></li>
+                ` : `
+                    <li class="uk-disabled"><span><span uk-pagination-next></span></span></li>
+                    <li class="uk-disabled"><span><span uk-pagination-next></span><span uk-pagination-next></span></span></li>
+                `}
+            </ul>
+        </div>
+        <div class="uk-text-center uk-text-small uk-text-muted">
+            Page ${currentPage} of ${totalPages}
+        </div>
+    `;
+
+    paginationContainer.innerHTML = paginationHtml;
+}
+
+// Debounced search input handler
+document.getElementById('log-search').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(performSearch, 300);
+});
+
+// Handle pagination clicks
+document.addEventListener('click', function(e) {
+    const paginationLink = e.target.closest('.uk-pagination a');
+    if (paginationLink) {
+        e.preventDefault();
+        const url = new URL(paginationLink.href, window.location.origin);
+        const searchTerm = document.getElementById('log-search').value;
+        
+        if (searchTerm) {
+            url.searchParams.set('search', searchTerm);
+        }
+
+        fetch(url.toString(), {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            tableContainer.innerHTML = data.html;
+            updatePagination(data.current_page, data.total_pages, searchTerm);
+            window.history.pushState({}, '', url.toString());
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            searchStatus.textContent = 'Error updating results';
+        });
+    }
+});
+
+// Initialize with URL parameters
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchTerm = urlParams.get('search');
+    if (searchTerm) {
+        const searchInput = document.getElementById('log-search');
+        searchInput.value = searchTerm;
+        performSearch();
+    }
+});
 </script>
 {% endblock %}

@@ -3,26 +3,31 @@
 {% block title %}Invitation List{% endblock %}
 
 {% block content %}
-<div class="uk-container uk-margin-large-top">
+<div class="uk-container">
     <!-- Page Header -->
-    <div class="uk-flex uk-flex-between uk-flex-middle uk-margin-bottom">
-        <h1 class="uk-heading-line uk-text-center"><span>Invitation List</span></h1>
-        <div>
-            <a href="{% url 'invitation_create' %}" class="uk-button uk-button-primary uk-button-large uk-border-rounded">
-                <span uk-icon="icon: plus-circle" style="margin-right: 10px;"></span> Create Invite
-            </a>
-            {% if not default_invite_exists and user.is_superuser %}
-            <button id="create-default-invite" class="uk-button uk-button-secondary uk-button-large uk-border-rounded">
-                <span uk-icon="icon: bolt" style="margin-right: 10px;"></span> Create Default Invite
-            </button>
-        {% endif %}
+    <div class="settings-card uk-margin-medium-bottom">
+        <div class="uk-flex uk-flex-between uk-flex-middle">
+            <h1 class="uk-heading-medium uk-margin-remove">Invitation List</h1>
+            <div class="uk-flex uk-flex-middle uk-flex-wrap">
+                <a onclick="showCreateInviteModal()" class="uk-button uk-button-primary uk-margin-small-right">
+                    <span uk-icon="plus-circle" class="uk-margin-small-right"></span>
+                    Create Invite
+                </a>
+                {% if not default_invite_exists and user.is_superuser %}
+                <button id="create-default-invite" class="uk-button uk-button-secondary">
+                    <span uk-icon="bolt" class="uk-margin-small-right"></span>
+                    Create Default Invite
+                </button>
+                {% endif %}
+            </div>
         </div>
     </div>
 
     <!-- Invitations Table -->
-    {% if invitations %}
+    <div class="settings-card">
+        {% if invitations %}
         <div class="uk-overflow-auto">
-            <table class="uk-table uk-table-divider uk-table-striped uk-table-hover uk-table-small uk-table-middle">
+            <table class="uk-table uk-table-divider uk-table-hover uk-table-middle uk-table-small">
                 <thead>
                     <tr>
                         <th>Invite Code</th>
@@ -31,100 +36,393 @@
                         <th>Expiry</th>
                         <th>Created At</th>
                         {% if user.is_superuser %}
-                            <th>Owner</th>
+                        <th>Owner</th>
                         {% endif %}
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for invitation in invitations %}
-                        <tr>
-                            <td>{{ invitation.invite_code }}</td>
-                            <td>{{ invitation.max_users }}</td>
-                            <td>{{ invitation.used_count }}</td>
-                            <td>
-                                {% if invitation.expiry %}
-                                    {{ invitation.expiry|date:"F j, Y, g:i a" }}
-                                {% else %}
-                                    None
-                                {% endif %}
-                            </td>
-                            <td>{{ invitation.created_at|date:"F j, Y, g:i a" }}</td>
-                            {% if user.is_superuser %}
-                                <td>{{ invitation.user }}</td>
+                    <tr>
+                        <td>
+                            <code class="invite-code">{{ invitation.invite_code }}</code>
+                        </td>
+                        <td>
+                            <span class="uk-label">{{ invitation.max_users }}</span>
+                        </td>
+                        <td>
+                            <span class="uk-label {% if invitation.used_count >= invitation.max_users %}uk-label-danger{% else %}uk-label-success{% endif %}">
+                                {{ invitation.used_count }} / {{ invitation.max_users }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if invitation.expiry %}
+                            <span class="uk-text-small">
+                                <span uk-icon="clock" class="uk-margin-small-right"></span>
+                                {{ invitation.expiry|date:"F j, Y, g:i a" }}
+                            </span>
+                            {% else %}
+                            <span class="uk-label uk-label-success">No Expiry</span>
                             {% endif %}
-                            <td>
-                                <form action="{% url 'invitation_delete' invitation.id %}" method="post" class="uk-inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="uk-button uk-button-danger uk-button-small">
-                                        <span uk-icon="icon: trash"></span> Delete
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
+                        </td>
+                        <td>
+                            <span class="uk-text-small">
+                                <span uk-icon="calendar" class="uk-margin-small-right"></span>
+                                {{ invitation.created_at|date:"F j, Y, g:i a" }}
+                            </span>
+                        </td>
+                        {% if user.is_superuser %}
+                        <td>
+                            <span class="uk-text-small">
+                                <span uk-icon="user" class="uk-margin-small-right"></span>
+                                {{ invitation.user }}
+                            </span>
+                        </td>
+                        {% endif %}
+                        <td>
+                            <button onclick="confirmDelete('{{ invitation.id }}')" 
+                                    class="uk-button uk-button-danger uk-button-small">
+                                <span uk-icon="trash"></span>
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    {% else %}
+        {% else %}
         <div class="uk-alert-warning" uk-alert>
-            <a class="uk-alert-close" uk-close></a>
-            No invitations found.
+            <p class="uk-margin-remove">
+                <span uk-icon="warning" class="uk-margin-small-right"></span>
+                No invitations found.
+            </p>
         </div>
-    {% endif %}
+        {% endif %}
+    </div>
 </div>
 
+<style>
+    .invite-code {
+        background: var(--hover-bg);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.9rem;
+    }
+
+    .uk-table th {
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    .uk-label {
+        font-weight: 500;
+        padding: 3px 10px;
+        border-radius: 12px;
+    }
+
+    .uk-text-small {
+        color: var(--text-color);
+        opacity: 0.9;
+    }
+
+    .uk-button {
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+    .uk-button-small {
+        padding: 0 15px;
+    }
+
+    .swal2-popup .uk-form-label {
+        color: var(--text-color);
+        font-weight: 500;
+        margin-bottom: 5px;
+        display: block;
+        text-align: left;
+    }
+
+    .swal2-popup .uk-input {
+        background: var(--input-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 4px;
+        padding: 8px;
+        margin-top: 4px;
+        width: 100%;
+    }
+
+    .swal2-popup .uk-input:focus {
+        border-color: #1e87f0 !important;
+        outline: none;
+    }
+
+    .swal2-popup .uk-margin {
+        margin-bottom: 15px !important;
+    }
+
+    /* SweetAlert2 Dark Mode Styles */
+    .swal2-popup {
+        background: var(--sidebar-bg) !important;
+        color: var(--text-color) !important;
+    }
+
+    .swal2-title, 
+    .swal2-html-container,
+    .swal2-validation-message {
+        color: var(--text-color) !important;
+    }
+
+    .swal2-input,
+    .swal2-textarea {
+        background: var(--input-bg) !important;
+        color: var(--text-color) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    .swal2-input:focus,
+    .swal2-textarea:focus {
+        border-color: #1e87f0 !important;
+        box-shadow: none !important;
+    }
+
+    /* Modal Content Styles */
+    .swal2-popup .uk-form-label {
+        color: var(--text-color);
+        font-weight: 500;
+        margin-bottom: 5px;
+        display: block;
+        text-align: left;
+    }
+
+    .swal2-popup .uk-input {
+        background: var(--input-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 4px;
+        padding: 8px;
+        margin-top: 4px;
+        width: 100%;
+    }
+
+    .swal2-popup .uk-input:focus {
+        border-color: #1e87f0 !important;
+        outline: none;
+    }
+
+    .swal2-popup .uk-margin {
+        margin-bottom: 15px !important;
+    }
+
+    /* Modal Backdrop */
+    .swal2-backdrop-show {
+        background: rgba(0, 0, 0, 0.7) !important;
+    }
+
+    /* Modal Container */
+    .swal-custom-popup {
+        border-radius: 8px !important;
+        padding: 1.5em !important;
+    }
+
+    /* Loading Animation Colors */
+    .swal2-loading {
+        border-color: var(--text-color) !important;
+    }
+
+    .swal2-success-circular-line-left,
+    .swal2-success-circular-line-right,
+    .swal2-success-fix {
+        background: var(--sidebar-bg) !important;
+    }
+
+    /* Icon Colors */
+    .swal2-icon.swal2-warning {
+        border-color: #f0ad4e !important;
+        color: #f0ad4e !important;
+    }
+
+    .swal2-icon.swal2-error {
+        border-color: #d9534f !important;
+        color: #d9534f !important;
+    }
+
+    .swal2-icon.swal2-success {
+        border-color: #5cb85c !important;
+        color: #5cb85c !important;
+    }
+
+    .swal2-icon.swal2-info {
+        border-color: #5bc0de !important;
+        color: #5bc0de !important;
+    }
+
+    .swal2-icon.swal2-question {
+        border-color: #f0ad4e !important;
+        color: #f0ad4e !important;
+    }
+</style>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const createDefaultInviteButton = document.getElementById('create-default-invite');
-        if (createDefaultInviteButton) {
-            createDefaultInviteButton.addEventListener('click', function () {
-                fetch("{% url 'create_invitation' %}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire({
-                            text: data.message,
-                            icon: 'success',
-                            toast: true,
-                            position: 'top-end',
-                            showConfirmButton: false,
-                            timer: 5000,
-                            timerProgressBar: true
-                        });
-                        setTimeout(() => location.reload(), 1500); // Reload to show the new invitation
-                    } else {
-                        Swal.fire({
-                            text: data.error || "An error occurred while creating the default invite.",
-                            icon: 'error',
-                            toast: true,
-                            position: 'top-end',
-                            showConfirmButton: false,
-                            timer: 5000,
-                            timerProgressBar: true
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
+function confirmDelete(invitationId) {
+    Swal.fire({
+        title: 'Delete Invitation?',
+        text: 'Are you sure you want to delete this invitation?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        customClass: {
+            popup: 'swal-custom-popup',
+            confirmButton: 'uk-button uk-button-danger',
+            cancelButton: 'uk-button uk-button-default uk-margin-left'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/invitations/${invitationId}/delete/`;
+            
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = '{{ csrf_token }}';
+            
+            form.appendChild(csrfInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const createDefaultInviteButton = document.getElementById('create-default-invite');
+    if (createDefaultInviteButton) {
+        createDefaultInviteButton.addEventListener('click', function () {
+            Swal.fire({
+                title: 'Creating Default Invite',
+                text: 'Please wait...',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch("{% url 'create_invitation' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
                     Swal.fire({
-                        text: "An unexpected error occurred.",
-                        icon: 'error',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 5000,
-                        timerProgressBar: true
+                        title: 'Success!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonClass: 'uk-button uk-button-primary'
+                    }).then(() => {
+                        location.reload();
                     });
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.error || "An error occurred while creating the default invite.",
+                        icon: 'error',
+                        confirmButtonClass: 'uk-button uk-button-primary'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: "An unexpected error occurred.",
+                    icon: 'error',
+                    confirmButtonClass: 'uk-button uk-button-primary'
                 });
+            });
+        });
+    }
+});
+
+function showCreateInviteModal() {
+    Swal.fire({
+        title: 'Create Invitation',
+        html: `
+            <form id="createInviteForm" class="uk-form-stacked">
+                <div class="uk-margin">
+                    <label class="uk-form-label">Invite Code:</label>
+                    <input class="uk-input" id="invite_code" type="text" readonly>
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label">Max Users:</label>
+                    <input class="uk-input" id="max_users" type="number" min="1" required>
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label">Expiry (optional):</label>
+                    <input class="uk-input" id="expiry" type="datetime-local">
+                </div>
+            </form>
+        `,
+        didOpen: () => {
+            // Generate random invite code
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let code = '';
+            for (let i = 0; i < 25; i++) {
+                code += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            document.getElementById('invite_code').value = code;
+        },
+        showCancelButton: true,
+        confirmButtonText: 'Create',
+        cancelButtonText: 'Cancel',
+        customClass: {
+            popup: 'swal-custom-popup',
+            confirmButton: 'uk-button uk-button-primary',
+            cancelButton: 'uk-button uk-button-default uk-margin-left'
+        },
+        preConfirm: () => {
+            const formData = {
+                invite_code: document.getElementById('invite_code').value,
+                max_users: document.getElementById('max_users').value,
+                expiry: document.getElementById('expiry').value
+            };
+
+            return fetch("{% url 'invitation_create' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to create invitation');
+                }
+                return data;
+            });
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Success!',
+                text: 'Invitation created successfully',
+                icon: 'success',
+                confirmButtonClass: 'uk-button uk-button-primary'
+            }).then(() => {
+                window.location.reload();
             });
         }
     });
+}
 </script>
 {% endblock %}
