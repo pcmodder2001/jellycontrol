@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}Login{% endblock %}
-
+{% load static %}
 {% block content %}
 <div class="uk-container-login">
     <!-- Background Container -->
@@ -13,7 +13,7 @@
                 
                 <!-- Logo and Title -->
                 <div class="uk-text-center uk-margin-small-bottom">
-                    <img src="https://raw.githubusercontent.com/pcmodder2001/jellycontrol/refs/heads/main/jellyfin_control/static/assets/custom_logo.png" 
+                    <img src="{% static 'images/custom_logo.png' %}" 
                          alt="Logo" 
                          class="uk-margin-small-bottom"
                          width="200">

@@ -77,11 +77,11 @@
                         </div>
                     </td>
                     <td>
-                        <a href="{% url 'reset_user_password' user_id=user.Id %}"
-                           class="uk-button uk-button-secondary uk-button-small">
+                        <button onclick="resetPassword('{{ user.Id }}', '{{ user.Name|escapejs }}')"
+                                class="uk-button uk-button-secondary uk-button-small">
                             <span uk-icon="icon: unlock"></span>
                             Reset Password
-                        </a>
+                        </button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -193,8 +193,6 @@ function showCreateUserModal() {
 }
 
 function confirmDelete(userId, userName) {
-    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-    
     Swal.fire({
         title: 'Delete User?',
         text: `Are you sure you want to delete ${userName}?`,
@@ -203,31 +201,30 @@ function confirmDelete(userId, userName) {
         confirmButtonText: 'Delete',
         cancelButtonText: 'Cancel',
         confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        background: theme === 'dark' ? '#1a1a1a' : '#fff',
-        color: theme === 'dark' ? '#fff' : '#545454',
-        reverseButtons: true,
-        focusCancel: true
+        cancelButtonColor: '#3085d6'
     }).then((result) => {
         if (result.isConfirmed) {
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
             
-            fetch(`/delete_user/${userId}/`, {
+            fetch(`/users/${userId}/delete/`, {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': csrfToken,
                     'Content-Type': 'application/json'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to delete user');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     Swal.fire({
                         title: 'Deleted!',
-                        text: `${userName} has been deleted successfully.`,
-                        icon: 'success',
-                        background: theme === 'dark' ? '#1a1a1a' : '#fff',
-                        color: theme === 'dark' ? '#fff' : '#545454'
+                        text: 'User has been deleted.',
+                        icon: 'success'
                     }).then(() => {
                         window.location.reload();
                     });
@@ -237,6 +234,87 @@ function confirmDelete(userId, userName) {
             })
             .catch(error => {
                 console.error('Delete error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: error.message,
+                    icon: 'error'
+                });
+            });
+        }
+    });
+}
+
+function resetPassword(userId, userName) {
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    
+    Swal.fire({
+        title: 'Reset Password',
+        html: `
+            <form id="resetPasswordForm" class="uk-form-stacked">
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="new_password">New Password</label>
+                    <input class="uk-input" id="new_password" type="password" required>
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="confirm_password">Confirm Password</label>
+                    <input class="uk-input" id="confirm_password" type="password" required>
+                </div>
+            </form>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Reset Password',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#1e87f0',
+        cancelButtonColor: '#999',
+        background: theme === 'dark' ? '#1a1a1a' : '#fff',
+        color: theme === 'dark' ? '#fff' : '#545454',
+        focusConfirm: false,
+        preConfirm: () => {
+            const password = document.getElementById('new_password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            if (password.length < 8) {
+                Swal.showValidationMessage('Password must be at least 8 characters long');
+                return false;
+            }
+            
+            if (password !== confirmPassword) {
+                Swal.showValidationMessage('Passwords do not match');
+                return false;
+            }
+            
+            return { password: password };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            fetch(`/master-reset-password/${userId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    password: result.value.password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: `Password for ${userName} has been reset successfully.`,
+                        icon: 'success',
+                        background: theme === 'dark' ? '#1a1a1a' : '#fff',
+                        color: theme === 'dark' ? '#fff' : '#545454'
+                    });
+                } else {
+                    throw new Error(data.error || 'Failed to reset password');
+                }
+            })
+            .catch(error => {
+                console.error('Reset error:', error);
                 Swal.fire({
                     title: 'Error!',
                     text: error.message,
@@ -302,6 +380,33 @@ function confirmDelete(userId, userName) {
 
     .swal2-popup .uk-margin {
         margin-bottom: 15px !important;
+    }
+
+    .swal2-popup .uk-form-label {
+        color: var(--text-color);
+        display: block;
+        margin-bottom: 5px;
+        text-align: left;
+    }
+
+    .swal2-popup .uk-input {
+        background: var(--input-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        height: 40px;
+        width: 100%;
+        padding: 0 10px;
+        margin-bottom: 10px;
+    }
+
+    .swal2-popup .uk-input:focus {
+        border-color: #1e87f0;
+        outline: none;
+    }
+
+    .swal2-popup .uk-margin {
+        margin-bottom: 15px;
     }
 </style>
 

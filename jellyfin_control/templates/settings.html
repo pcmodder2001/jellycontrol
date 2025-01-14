@@ -28,9 +28,24 @@
                         </div>
                     </div>
                     <div class="uk-margin">
-                        <label class="uk-form-label" for="{{ form.jellyfin_api_key.id_for_label }}">Jellyfin API Key</label>
+                        <label class="uk-form-label">Jellyfin API Key</label>
                         <div class="uk-form-controls">
-                            {{ form.jellyfin_api_key }}
+                            <div class="uk-flex uk-flex-middle">
+                                <div class="uk-width-2-3">
+                                    <input class="uk-input" 
+                                           type="text" 
+                                           name="jellyfin_api_key" 
+                                           value="{{ form.jellyfin_api_key.value|default:'' }}" 
+                                           readonly>
+                                </div>
+                                <button type="button" 
+                                        class="uk-button uk-button-primary uk-margin-small-left" 
+                                        onclick="generateApiKey()"
+                                        id="generate-api-key-btn">
+                                    <span uk-icon="refresh" class="uk-margin-small-right"></span>
+                                    Generate API Key
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="uk-margin">
@@ -68,15 +83,15 @@
                         Jellyseer Configuration
                     </h3>
                     <div class="uk-margin">
-                        <label class="uk-form-label" for="{{ form.jellyseer_url.id_for_label }}">Jellyseer URL</label>
+                        <label class="uk-form-label" for="{{ form.jellyseerr_url.id_for_label }}">Jellyseerr URL</label>
                         <div class="uk-form-controls">
-                            {{ form.jellyseer_url }}
+                            {{ form.jellyseerr_url }}
                         </div>
                     </div>
                     <div class="uk-margin">
-                        <label class="uk-form-label" for="{{ form.jellyseer_api_key.id_for_label }}">Jellyseer API Key</label>
+                        <label class="uk-form-label" for="{{ form.jellyseerr_api_key.id_for_label }}">Jellyseerr API Key</label>
                         <div class="uk-form-controls">
-                            {{ form.jellyseer_api_key }}
+                            {{ form.jellyseerr_api_key }}
                         </div>
                     </div>
                 </div>
@@ -171,6 +186,52 @@ function showUploadModal() {
         }
     });
 }
+
+function generateApiKey() {
+    const button = document.getElementById('generate-api-key-btn');
+    const originalText = button.innerHTML;
+    
+    // Disable button and show loading state
+    button.disabled = true;
+    button.innerHTML = '<div uk-spinner></div> Generating...';
+    
+    fetch('{% url "generate_api_key" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            UIkit.notification({
+                message: data.message || 'API key generated successfully',
+                status: 'success',
+                pos: 'top-right',
+                timeout: 5000
+            });
+            // Reload the page to show the new API key
+            window.location.reload();
+        } else {
+            throw new Error(data.error || 'Failed to generate API key');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        UIkit.notification({
+            message: error.message,
+            status: 'danger',
+            pos: 'top-right',
+            timeout: 5000
+        });
+    })
+    .finally(() => {
+        // Reset button state
+        button.disabled = false;
+        button.innerHTML = originalText;
+    });
+}
 </script>
 
 <style>
@@ -234,6 +295,25 @@ function showUploadModal() {
         margin-top: 10px;
         width: 100%;
         background: var(--input-bg);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+    }
+
+    .uk-form-controls .uk-flex {
+        gap: 10px;
+    }
+
+    #generate-api-key-btn {
+        white-space: nowrap;
+        padding: 0 20px;
+        height: 40px;
+        line-height: 38px;
+        border-radius: 4px;
+    }
+
+    .uk-form-controls input[readonly] {
+        background-color: var(--input-bg);
         color: var(--text-color);
         border: 1px solid var(--border-color);
         border-radius: 4px;

@@ -1,14 +1,90 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Setup Successful{% endblock %}
 
 {% block content %}
-<div class="uk-flex uk-flex-center">
-    <div class="uk-card uk-card-default uk-width-1-2@m">
-        <div class="uk-card-body">
-            <h1 class="uk-card-title uk-text-center">Setup Successful</h1>
-            <p class="uk-text-center">Your Jellyfin setup is complete.</p>
+<div class="uk-container uk-container-small">
+    <div class="success-container uk-card uk-card-default uk-card-body uk-margin-large-top uk-text-center">
+        <!-- Logo -->
+        <img src="{% static 'images/custom_logo.png' %}" alt="Logo" width="150" class="uk-margin-bottom">
+        
+        <!-- Success Icon -->
+        <div class="success-icon uk-margin-medium-bottom">
+            <span uk-icon="icon: check; ratio: 3"></span>
+        </div>
+
+        <!-- Success Message -->
+        <h1 class="uk-heading-small uk-margin-remove-top">Setup Complete!</h1>
+        <p class="uk-text-muted uk-margin-medium-bottom">Your Jellyfin server has been successfully configured</p>
+
+        <!-- Navigation Buttons -->
+        <div class="uk-margin">
+            <a href="{% url 'home' %}" class="uk-button uk-button-primary uk-margin-small-right">
+                <span uk-icon="icon: home"></span>
+                Go to Dashboard
+            </a>
+            <a href="{% url 'settings' %}" class="uk-button uk-button-default">
+                <span uk-icon="icon: settings"></span>
+                Settings
+            </a>
         </div>
     </div>
 </div>
+
+<style>
+.success-container {
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 2rem;
+    animation: slideIn 0.5s ease-out;
+}
+
+.success-icon {
+    display: inline-block;
+    width: 80px;
+    height: 80px;
+    line-height: 80px;
+    border-radius: 50%;
+    background: #32d296;
+    color: white;
+}
+
+.success-icon [uk-icon] {
+    color: white;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.uk-button {
+    border-radius: 4px;
+    padding: 0 20px;
+}
+
+.uk-button-primary {
+    background: #1e87f0;
+}
+
+.uk-button-default {
+    background: var(--button-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.uk-button-default:hover {
+    background: var(--button-hover-bg);
+}
+</style>
 {% endblock %}

@@ -1,161 +1,314 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Jellyfin Setup{% endblock %}
 
 {% block content %}
-<h1 class="uk-heading-line uk-text-center"><span>Jellyfin Setup</span></h1>
-
-<div id="setup-step-1">
-    <form id="setup-form-1" method="post" action="{% url 'setup' %}">
-        {% csrf_token %}
-        <input type="hidden" name="step" value="1">
-        <div class="uk-margin custom-white-box">
-            <label class="uk-form-label" for="server_url">Jellyfin Server URL:</label>
-            <div class="uk-form-controls">
-                <small><strong>Please make sure the url has / at the end.</strong></small>
-                <input type="url" class="uk-input" id="server_url" name="server_url" required>
-            </div>
+<div class="uk-container uk-container-small">
+    <div class="setup-container uk-card uk-card-default uk-card-body uk-margin-large-top uk-margin-large-bottom">
+        <!-- Logo -->
+        <div class="uk-text-center uk-margin-medium-bottom">
+            <img src="{% static 'images/custom_logo.png' %}" alt="Logo" width="150" class="uk-margin-bottom">
+            <h1 class="uk-heading-small uk-margin-remove-top">Jellyfin Setup</h1>
+            <p class="uk-text-muted">Let's get your Jellyfin server connected</p>
         </div>
-        <button type="submit" class="uk-button uk-button-primary">Next</button>
-    </form>
-</div>
 
-<div id="setup-step-2" style="display:none;" class="custom-white-box">
-    <form id="setup-form-2" method="post" action="{% url 'setup' %}">
-        {% csrf_token %}
-        <input type="hidden" name="step" value="2">
-        <div class="uk-margin ">
-            <label class="uk-form-label" for="username">Admin Username:</label>
-            <div class="uk-form-controls">
-                <input type="text" class="uk-input" id="username" name="username" required>
+        <!-- Step 1 -->
+        <div id="setup-step-1" class="setup-step">
+            <div class="uk-text-center uk-margin-bottom">
+                <span class="step-number">1</span>
+                <h3 class="uk-margin-small-top">Server Configuration</h3>
             </div>
+            <form id="setup-form-1" method="post" action="{% url 'setup' %}">
+                {% csrf_token %}
+                <input type="hidden" name="step" value="1">
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="server_url">Jellyfin Server URL:</label>
+                    <div class="uk-form-controls">
+                        <div class="uk-inline uk-width-1-1">
+                            <span class="uk-form-icon" uk-icon="icon: link"></span>
+                            <input type="url" class="uk-input" id="server_url" name="server_url" 
+                                   placeholder="https://your-server.com/" required>
+                        </div>
+                        <small class="uk-text-warning">
+                            <span uk-icon="icon: warning"></span>
+                            Please make sure the URL ends with a forward slash (/)
+                        </small>
+                    </div>
+                </div>
+                <button type="submit" class="uk-button uk-button-primary uk-width-1-1">
+                    <span uk-icon="arrow-right"></span> Continue
+                </button>
+            </form>
         </div>
-        <div class="uk-margin">
-            <label class="uk-form-label" for="password">Admin Password:</label>
-            <div class="uk-form-controls">
-                <input type="password" class="uk-input" id="password" name="password" required>
+
+        <!-- Step 2 -->
+        <div id="setup-step-2" style="display:none;" class="setup-step">
+            <div class="uk-text-center uk-margin-bottom">
+                <span class="step-number">2</span>
+                <h3 class="uk-margin-small-top">Admin Credentials</h3>
             </div>
+            <form id="setup-form-2" method="post" action="{% url 'setup' %}">
+                {% csrf_token %}
+                <input type="hidden" name="step" value="2">
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="username">Admin Username:</label>
+                    <div class="uk-form-controls">
+                        <div class="uk-inline uk-width-1-1">
+                            <span class="uk-form-icon" uk-icon="icon: user"></span>
+                            <input type="text" class="uk-input" id="username" name="username" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="password">Admin Password:</label>
+                    <div class="uk-form-controls">
+                        <div class="uk-inline uk-width-1-1">
+                            <span class="uk-form-icon" uk-icon="icon: lock"></span>
+                            <input type="password" class="uk-input" id="password" name="password" required>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="uk-button uk-button-primary uk-width-1-1">
+                    <span uk-icon="arrow-right"></span> Continue
+                </button>
+            </form>
         </div>
-        <button type="submit" class="uk-button uk-button-primary">Next</button>
-    </form>
-</div>
 
-<div id="setup-step-3" style="display:none;">
-    <form id="setup-form-3" method="post" action="{% url 'setup' %}">
-        {% csrf_token %}
-        <input type="hidden" name="step" value="3">
-        <p>Click the button below to sync users from the Jellyfin server.</p>
-        <button type="submit" class="uk-button uk-button-primary">Sync Users</button>
-    </form>
-</div>
+        <!-- Step 3 -->
+        <div id="setup-step-3" style="display:none;" class="setup-step">
+            <div class="uk-text-center uk-margin-bottom">
+                <span class="step-number">3</span>
+                <h3 class="uk-margin-small-top">Sync Users</h3>
+                <p class="uk-text-muted">Import your existing Jellyfin users</p>
+            </div>
+            <form id="setup-form-3" method="post" action="{% url 'setup' %}">
+                {% csrf_token %}
+                <input type="hidden" name="step" value="3">
+                <button type="submit" class="uk-button uk-button-primary uk-width-1-1">
+                    <span uk-icon="refresh"></span> Sync Users
+                </button>
+            </form>
+        </div>
 
-<div id="setup-step-4" style="display:none;">
-    <form id="setup-form-4" method="post" action="{% url 'setup' %}">
-        {% csrf_token %}
-        <input type="hidden" name="step" value="4">
-        <p>Click the button below to generate and store api key. (this is to allow users to register)</p>
-        <button type="submit" class="uk-button uk-button-primary">Generate</button>
-    </form>
-</div>
+        <!-- Step 4 -->
+        <div id="setup-step-4" style="display:none;" class="setup-step">
+            <div class="uk-text-center uk-margin-bottom">
+                <span class="step-number">4</span>
+                <h3 class="uk-margin-small-top">Generate API Key</h3>
+                <p class="uk-text-muted">Create an API key for user registration</p>
+            </div>
+            <form id="setup-form-4" method="post" action="{% url 'setup' %}">
+                {% csrf_token %}
+                <input type="hidden" name="step" value="4">
+                <button type="submit" class="uk-button uk-button-primary uk-width-1-1">
+                    <span uk-icon="code"></span> Generate API Key
+                </button>
+            </form>
+        </div>
 
-{% if messages %}
-<div class="uk-alert">
-    {% for message in messages %}
-    <div class="uk-alert-{{ message.tags }}">
-        {{ message }}
+        {% if messages %}
+        <div class="uk-margin-top">
+            {% for message in messages %}
+            <div class="uk-alert-{{ message.tags }}" uk-alert>
+                <a class="uk-alert-close" uk-close></a>
+                <p>{{ message }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
-    {% endfor %}
 </div>
-{% endif %}
+
+<style>
+.setup-container {
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.step-number {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    border-radius: 50%;
+    background: #1e87f0;
+    color: white;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.uk-form-label {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.uk-input {
+    background: var(--input-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color);
+}
+
+.uk-input:focus {
+    border-color: #1e87f0;
+}
+
+.setup-step {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
 
 <script>
-    document.getElementById('setup-form-1').addEventListener('submit', function(event) {
-        event.preventDefault();
-        const formData = new FormData(this);
-        
-        fetch('{% url "setup" %}', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('setup-step-1').style.display = 'none';
-                document.getElementById('setup-step-2').style.display = 'block';
-            } else {
-                showAlert(data.error);
-            }
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('setup-form-1').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('{% url "setup" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('setup-step-1').style.display = 'none';
+                    document.getElementById('setup-step-2').style.display = 'block';
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.error || 'An error occurred',
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An unexpected error occurred',
+                    icon: 'error',
+                    confirmButtonText: 'Ok'
+                });
+            });
+        });
+
+        document.getElementById('setup-form-2').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('{% url "setup" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('setup-step-2').style.display = 'none';
+                    document.getElementById('setup-step-3').style.display = 'block';
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.error || 'An error occurred',
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An unexpected error occurred',
+                    icon: 'error',
+                    confirmButtonText: 'Ok'
+                });
+            });
+        });
+
+        document.getElementById('setup-form-3').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('{% url "setup" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('setup-step-3').style.display = 'none';
+                    document.getElementById('setup-step-4').style.display = 'block';
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.error || 'An error occurred',
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An unexpected error occurred',
+                    icon: 'error',
+                    confirmButtonText: 'Ok'
+                });
+            });
+        });
+
+        document.getElementById('setup-form-4').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('{% url "setup" %}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'Setup completed successfully!',
+                            icon: 'success',
+                            confirmButtonText: 'Ok'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    }
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.error || 'An error occurred',
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An unexpected error occurred',
+                    icon: 'error',
+                    confirmButtonText: 'Ok'
+                });
+            });
         });
     });
-
-    document.getElementById('setup-form-2').addEventListener('submit', function(event) {
-        event.preventDefault();
-        const formData = new FormData(this);
-        
-        fetch('{% url "setup" %}', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('setup-step-2').style.display = 'none';
-                document.getElementById('setup-step-3').style.display = 'block';
-            } else {
-                showAlert(data.error);
-            }
-        });
-    });
-
-    document.getElementById('setup-form-3').addEventListener('submit', function(event) {
-        event.preventDefault();
-        const formData = new FormData(this);
-        
-        fetch('{% url "setup" %}', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('setup-step-3').style.display = 'none';
-                document.getElementById('setup-step-4').style.display = 'block';
-                checkApiKeyStatus();
-            } else {
-                showAlert(data.error);
-            }
-        });
-    });
-
-    function checkApiKeyStatus() {
-        // Poll the server or use a different method to determine when API key setup is complete
-        // This example assumes that the server will redirect on success
-        fetch('{% url "setup" %}')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.redirect_url) {
-                window.location.href = data.redirect_url;
-            } else {
-                showAlert(data.error);
-            }
-        });
-    }
-
-    function showAlert(message) {
-        const alertDiv = document.createElement('div');
-        alertDiv.classList.add('uk-alert-danger', 'uk-alert');
-        alertDiv.textContent = message;
-        document.querySelector('#content').prepend(alertDiv);
-        setTimeout(() => alertDiv.remove(), 5000);
-    }
 </script>
 {% endblock %}

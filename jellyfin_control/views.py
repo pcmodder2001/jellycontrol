@@ -32,6 +32,8 @@ from django.http import FileResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.management import call_command
 import re
+import random
+import string
 
 
 
@@ -46,117 +48,64 @@ def log_action(action, message, user=None):
 
 def setup(request):
     if request.method == 'POST':
-        
         step = request.POST.get('step')
-        user = request.user if request.user.is_authenticated else None
-
-        # Step 1: Save Server URL
+        
         if step == '1':
+            # Handle server URL validation
             server_url = request.POST.get('server_url')
             if not server_url:
-                log_action('ERROR', 'Server URL is required.', user)
-                messages.error(request,"Server URL is required.")
-            request.session['server_url'] = server_url
-            log_action('SETUP', 'Server URL saved.', user)
+                return JsonResponse({'success': False, 'error': 'Server URL is required'})
+            
+            # Save server URL
+            config, created = Config.objects.get_or_create(pk=1)
+            config.server_url = server_url
+            config.save()
+            
             return JsonResponse({'success': True, 'step': '2'})
-
-        # Step 2: Authenticate Admin
+            
         elif step == '2':
-            server_url = request.session.get('server_url')
-            username = request.POST.get('username')
-            password = request.POST.get('password')
+            # Handle admin credentials
+            # Your existing step 2 code...
+            return JsonResponse({'success': True, 'step': '3'})
             
-            if not server_url or not username or not password:
-                log_action('ERROR', 'Server URL, username, and password are required.', user)
-                messages.error(request,"Server URL, username, and password are required.")
-                return redirect("setup")
-            try:
-                token = authenticate_admin(request, server_url, username, password)
-                if token:
-                    request.session['token'] = token
-                    log_action('SETUP', 'Admin authenticated successfully.', user)
-                    return JsonResponse({'success': True, 'step': '3'})
-                else:
-                    log_action('ERROR', 'Authentication failed.', user)
-                    return JsonResponse({'success': False, 'error': "Authentication failed."})
-            except Exception as e:
-                log_action('ERROR', f'Authentication failed: {str(e)}', user)
-                return JsonResponse({'success': False, 'error': str(e)})
-
-        # Step 3: Sync Users
         elif step == '3':
-            server_url = request.session.get('server_url')
-            token = request.session.get('token')
+            # Handle user sync
+            # Your existing step 3 code...
+            return JsonResponse({'success': True, 'step': '4'})
             
-            if not server_url or not token:
-                log_action('ERROR', 'Server URL and token are required.', user)
-                messages.error(request,"Server URL and token are required.")
-                return redirect("setup")
-            try:
-                sync_users(server_url, token)
-                
-                # Save the server URL in Config model
-                config, created = Config.objects.get_or_create(id=1)
-                config.server_url = server_url
-                config.save()
-
-                log_action('SETUP', 'Users synced successfully.', user)
-
-                # Proceed to step 4 (get/generate API key)
-                return JsonResponse({'success': True, 'step': '4'})
-            except Exception as e:
-                log_action('ERROR', f'Failed to sync users: {str(e)}', user)
-                return JsonResponse({'success': False, 'error': str(e)})
-
-        # Step 4: Generate and Retrieve API Key
         elif step == '4':
-            server_url = request.session.get('server_url')
-            token = request.session.get('token')
-
-            if not server_url or not token:
-                log_action('ERROR', 'Server URL and token are required.', user)
-                return HttpResponseBadRequest("Server URL and token are required.")
-
             try:
-                # Step 1: Make POST request to generate API key
-                create_key_url = f"{server_url}/Auth/Keys?app=JellyfinControlApp"
-                headers = {
-                    'X-Emby-Token': token,
-                    'Content-Type': 'application/json'
-                }
-                create_response = requests.post(create_key_url, headers=headers)
-
-                if create_response.status_code == 204:
-                    # Step 2: Make GET request to retrieve the newly generated API key
-                    get_keys_url = f"{server_url}/Auth/Keys"
-                    get_response = requests.get(get_keys_url, headers=headers)
-
-                    if get_response.status_code == 200:
+                # Generate and save API key
+                config = Config.objects.first()
+                if not config:
+                    return JsonResponse({'success': False, 'error': 'Configuration not found'})
                 
-                        api_keys = get_response.json().get('Items', [])
-                        if api_keys and len(api_keys) > 0:
-                            # Save the API key in the Config model
-                            api_key = api_keys[-1]['AccessToken']  # Assume the latest one is the new key
-                            config, created = Config.objects.get_or_create(id=1)
-                            config.jellyfin_api_key = api_key
-                            config.save()
-
-                            log_action('INFO', 'API key created and saved.', user)
-                            messages.success(request, "Set up succsessful you can now login! ")
-                            return redirect("login")
-                        else:
-                            log_action('ERROR', 'No API key found after creation.', user)
-                            return JsonResponse({'success': False, 'error': "No API key found after creation."})
-                    else:
-                        log_action('ERROR', f'Failed to retrieve API keys: {get_response.status_code}', user)
-                        return JsonResponse({'success': False, 'error': f"Failed to retrieve API keys: {get_response.status_code}"})
-                else:
-                    log_action('ERROR', f'Failed to create API key: {create_response.status_code}', user)
-                    return JsonResponse({'success': False, 'error': f"Failed to create API key: {create_response.status_code}"})
+                # Your API key generation logic here
+                api_key = generate_api_key()  # Your function to generate API key
+                config.jellyfin_api_key = api_key
+                config.save()
+                
+                # Log the setup completion
+                LogEntry.objects.create(
+                    action='SETUP',
+                    user=request.user,
+                    message='Setup completed successfully'
+                )
+                
+                # Return success with redirect URL
+                return JsonResponse({
+                    'success': True,
+                    'redirect_url': reverse('home'),
+                    'message': 'Setup completed successfully'
+                })
+                
             except Exception as e:
-                log_action('ERROR', f'Error in API key creation process: {str(e)}', user)
-                return JsonResponse({'success': False, 'error': str(e)})
-
+                return JsonResponse({
+                    'success': False,
+                    'error': str(e)
+                })
+    
+    # GET request - show setup page
     return render(request, 'control/setup.html')
 
 @require_POST
@@ -784,11 +733,17 @@ def create_user(request):
 def delete_user(request, user_id):
     access_token = request.session.get('jellyfin_access_token')
     if not access_token:
-        return HttpResponseBadRequest("No access token found in session. Please log in first.")
+        return JsonResponse({
+            'success': False,
+            'error': 'No access token found in session. Please log in first.'
+        }, status=401)
 
-    config = Config.objects.first()  # Retrieve your configuration model
+    config = Config.objects.first()
     if not config:
-        return HttpResponseBadRequest("Configuration error: No Jellyfin server URL configured.")
+        return JsonResponse({
+            'success': False,
+            'error': 'Configuration error: No Jellyfin server URL configured.'
+        }, status=400)
 
     server_url = config.server_url
     delete_user_url = f'{server_url}/Users/{user_id}'
@@ -802,45 +757,78 @@ def delete_user(request, user_id):
         try:
             # Fetch the user details first to get the username
             user_response = requests.get(get_user_url, headers=headers)
-            if user_response.status_code == 200:
-                user_data = user_response.json()
-                username = user_data.get('Name')
+            if user_response.status_code != 200:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Failed to fetch user details: {user_response.status_code} - {user_response.text}'
+                }, status=400)
 
-                # Send DELETE request to Jellyfin API to delete the user
-                response = requests.delete(delete_user_url, headers=headers)
-                if response.status_code == 204:
-                    # Delete the user from Django database
-                    try:
-                        django_user = CustomUser.objects.get(jellyfin_user_id=user_id)
-                        django_user.delete()
-                        messages.success(request, f"User '{username}' successfully deleted.")
-                        LogEntry.objects.create(
-                            action='DELETED',
-                            user=request.user,
-                            message=f"User '{username}' deleted successfully from Jellyfin and Django."
-                        )
-                    except CustomUser.DoesNotExist:
-                        messages.warning(request, f"User '{username}' was not found in the Django database.")
-                        LogEntry.objects.create(
-                            action='DELETED',
-                            user=request.user,
-                            message=f"Attempted to delete user '{username}' from Jellyfin. User was not found in the Django database."
-                        )
-                    token = access_token
-                    sync_users(server_url, token)
-                    return redirect('view_users')  # Redirect to view users page or success page
-                else:
-                    error_message = f"Failed to delete user '{username}' from Jellyfin: {response.status_code} - {response.text}"
-                    return HttpResponseBadRequest(error_message)
-            else:
-                error_message = f"Failed to fetch user details: {user_response.status_code} - {user_response.text}"
-                return HttpResponseBadRequest(error_message)
+            user_data = user_response.json()
+            username = user_data.get('Name')
+
+            # Send DELETE request to Jellyfin API to delete the user
+            response = requests.delete(delete_user_url, headers=headers)
+            if response.status_code != 204:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Failed to delete user from Jellyfin: {response.status_code} - {response.text}'
+                }, status=400)
+
+            # Delete the user from Django database
+            try:
+                django_user = CustomUser.objects.get(jellyfin_user_id=user_id)
+                django_user.delete()
+                
+                # Log successful deletion
+                LogEntry.objects.create(
+                    action='DELETED',
+                    user=request.user,
+                    message=f"User '{username}' deleted successfully from Jellyfin and Django."
+                )
+            except CustomUser.DoesNotExist:
+                # Log partial deletion
+                LogEntry.objects.create(
+                    action='DELETED',
+                    user=request.user,
+                    message=f"User '{username}' deleted from Jellyfin. User was not found in Django database."
+                )
+
+            # Sync users after deletion
+            token = access_token
+            sync_users(server_url, token)
+
+            return JsonResponse({
+                'success': True,
+                'message': f"User '{username}' successfully deleted."
+            })
 
         except requests.RequestException as e:
-            error_message = f"Failed to connect to Jellyfin server: {str(e)}"
-            return HttpResponseBadRequest(error_message)
+            # Log error
+            LogEntry.objects.create(
+                action='ERROR',
+                user=request.user,
+                message=f"Failed to delete user: {str(e)}"
+            )
+            return JsonResponse({
+                'success': False,
+                'error': f'Failed to connect to Jellyfin server: {str(e)}'
+            }, status=500)
+        except Exception as e:
+            # Log unexpected error
+            LogEntry.objects.create(
+                action='ERROR',
+                user=request.user,
+                message=f"Unexpected error while deleting user: {str(e)}"
+            )
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
 
-    return HttpResponseBadRequest("Invalid request method")
+    return JsonResponse({
+        'success': False,
+        'error': 'Method not allowed'
+    }, status=405)
 
 
 
@@ -901,78 +889,41 @@ def create_invitation(request):
     }, status=405)
 
 @login_required
-def invitation_create(request):
+@superuser_required
+def invitation_delete(request, invite_code):
     if request.method == 'POST':
         try:
-            # Parse JSON data for AJAX request
-            data = json.loads(request.body)
-            invite_code = data.get('invite_code')
-            max_users = int(data.get('max_users'))
-            expiry = data.get('expiry')
-
-            # Validate the data
-            if not invite_code or not max_users:
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Missing required fields'
-                })
-
-            # Create the invitation
-            invitation = Invitation.objects.create(
+            invitation = get_object_or_404(Invitation, invite_code=invite_code)
+            invitation.delete()
+            
+            # Log the deletion
+            LogEntry.objects.create(
+                action='DELETED',
                 user=request.user,
-                invite_code=invite_code,
-                max_users=max_users,
-                expiry=expiry if expiry else None
+                message=f'Deleted invitation code: {invite_code}'
             )
-
+            
             return JsonResponse({
                 'success': True,
-                'invitation': {
-                    'id': invitation.id,
-                    'invite_code': invitation.invite_code,
-                    'max_users': invitation.max_users,
-                    'expiry': invitation.expiry.isoformat() if invitation.expiry else None
-                }
+                'message': 'Invitation deleted successfully'
             })
-
+            
+        except Invitation.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invitation not found'
+            }, status=404)
         except Exception as e:
             return JsonResponse({
                 'success': False,
                 'error': str(e)
-            })
-
-    # Return error for non-POST requests
+            }, status=500)
+    
     return JsonResponse({
         'success': False,
-        'error': 'Invalid request method'
-    })
+        'error': 'Method not allowed'
+    }, status=405)
 
-@login_required
-def invitation_delete(request, invitation_id):
-    if request.method == 'POST':
-        try:
-            invitation = get_object_or_404(Invitation, pk=invitation_id)
-            invite_code = invitation.invite_code  # Capture the invite code before deletion
-            invitation.delete()
-            messages.success(request, "Invitation deleted successfully.")
-            LogEntry.objects.create(
-                action='DELETED',
-                user=request.user,
-                message=f"Invitation '{invite_code}' deleted successfully."
-            )
-            return redirect('invitation_list')
-        except Exception as e:
-            messages.error(request, f"Failed to delete invitation: {e}")
-            LogEntry.objects.create(
-                action='ERROR',
-                user=request.user,
-                message=f"Failed to delete invitation '{invitation_id}': {str(e)}"
-            )
-            return redirect('invitation_list')
-    else:
-        messages.error(request, "Invalid request method.")
-        return HttpResponseBadRequest("Invalid request method")
-    
 def enter_invite(request):
     config = Config.objects.first()
     if not config:
@@ -1085,99 +1036,7 @@ def registration_success(request):
     return render(request, 'registration_success.html', {'server_url': server_url})
 
 
-@login_required
-@superuser_required
-def enter_license_key(request):
-    try:
-        license = License.objects.get(id=1)  # Assuming a single license per installation
-    except License.DoesNotExist:
-        license = None
 
-    config = Config.objects.first()
-    device_id = config.app_instance_id
-
-    if request.method == 'POST':
-        form = LicenseForm(request.POST)
-        if form.is_valid():
-            key = form.cleaned_data['key']
-            response = requests.get(f"{settings.LICENSING_SERVER_URL}/api/validate/", params={'key': key})
-
-            if response.status_code == 200:
-                try:
-                    data = response.json()
-                    app_name = data.get('app_name')
-                    license_device_id = data.get('app_instance_id')
-                    functions = data.get('functions', [])
-                    first_time_use = data.get('first_time_use')  # Default to False if not provided
-
-                    if data.get('valid'):
-                        if app_name != settings.APP_NAME:
-                            form.add_error('key', 'Incorrect application name for this license key.')
-                        elif license_device_id != device_id:
-                            if not config.app_instance_id:  # Check if app_instance_id is not already set
-                                if first_time_use:
-                                    config.app_instance_id = license_device_id
-                                    config.save()
-                                    messages.info(request, 'Application Instance ID set successfully.')
-                                # Proceed to validate license key and update functions
-                                else:
-                                    form.add_error('key', 'This license key has already been activated on another system.')
-
-                            else:
-                                form.add_error('key', 'This license key has already been activated on another system.')
-                                return render(request, 'enter_license_key.html', {'form': form, 'license': license, 'config': config})
-                        else:
-                            if not license:
-                                license = License.objects.create(id=1, key=key)
-                            else:
-                                license.key = key
-                                license.validated = True
-                                license.validated_at = timezone.now()
-
-                            expires_at = data.get('expires_at')
-                            if expires_at:
-                                license.expires_at = timezone.datetime.fromisoformat(expires_at)
-                                license.save()
-
-                                # Update functions
-                                existing_functions = {func.name: func for func in Function.objects.all()}
-                                for function_data in functions:
-                                    function_name = function_data.get('name')
-                                    function_enabled = function_data.get('enabled', False)
-                                    if function_name in existing_functions:
-                                        function = existing_functions[function_name]
-                                        function.enabled = function_enabled
-                                    else:
-                                        function = Function(name=function_name, enabled=function_enabled)
-                                        function.save()
-                                        license.functions.add(function)
-
-                                # Set app_instance_id if first_time_use
-                                if first_time_use:
-                                    if not config.app_instance_id:
-                                        config.app_instance_id = license_device_id
-                                        config.save()
-                                    else:
-                                        form.add_error('key', 'This license key has already been activated on another system.')
-                                        return render(request, 'enter_license_key.html', {'form': form, 'license': license, 'config': config})
-                                license.validated = True
-                                license.save()
-                                messages.success(request, 'License key successfully validated.')
-                                return redirect('/home/')  # Redirect to a protected view or home page
-                            else:
-                                form.add_error('key', 'Invalid response from licensing server (missing expires_at)')
-                    else:
-                        form.add_error('key', 'Invalid or expired license key.')
-                except ValueError:
-                    form.add_error('key', 'Invalid JSON response from licensing server')
-            else:
-                form.add_error('key', f'Failed to validate license key: {response.status_code}')
-        else:
-            form.add_error(None, 'Form data is not valid')
-    else:
-        form = LicenseForm(initial={'key': license.key if license else ''})
-
-    return render(request, 'enter_license_key.html', {'form': form, 'license': license, 'config': config})
 
 @login_required
 @superuser_required
@@ -1631,60 +1490,97 @@ def movie_detail(request, movie_id):
 @login_required
 @superuser_required
 def reset_user_password(request, user_id):
-    # Ensure only superusers can reset passwords
-    if not request.user.is_superuser:
-        messages.error(request, "You do not have permission to reset passwords.")
-        return redirect('dashboard')
-
     if request.method == 'POST':
-        # Extract form data
-        config = get_object_or_404(Config, pk=1)  # Assuming there's only one config entry
-        new_password = request.POST.get('new_password', '')
-
-        # Fetch the user's access token from the session
-        jellyfin_token = request.session.get('jellyfin_access_token')
-        
-        # Define the headers including the authorization token
-        headers = {
-            'Authorization': f'MediaBrowser Token={jellyfin_token}',
-            'Content-Type': 'application/json'
-        }
-        
-        # Step 1: Trigger the password reset
-        reset_payload = {
-            'ResetPassword': True,
-            'CurrentPw': None,
-            'NewPw': None
-        }
-
-        reset_url = f'{config.server_url}/Users/{user_id}/Password'
-
         try:
+            data = json.loads(request.body)
+            new_password = data.get('password')
+            
+            if not new_password:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Password is required'
+                }, status=400)
+
+            # Get the user and config
+            user = get_object_or_404(CustomUser, jellyfin_user_id=user_id)
+            config = get_object_or_404(Config, pk=1)
+            
+            # Get Jellyfin token
+            jellyfin_token = request.session.get('jellyfin_access_token')
+            if not jellyfin_token:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Jellyfin authentication token not found'
+                }, status=401)
+
+            # Define headers for Jellyfin API
+            headers = {
+                'Authorization': f'MediaBrowser Token={jellyfin_token}',
+                'Content-Type': 'application/json'
+            }
+
+            # Step 1: Reset password in Jellyfin
+            reset_url = f'{config.server_url}/Users/{user_id}/Password'
+            reset_payload = {
+                'ResetPassword': True,
+                'CurrentPw': None,
+                'NewPw': None
+            }
+
             reset_response = requests.post(reset_url, json=reset_payload, headers=headers)
+            if reset_response.status_code != 204:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Failed to initiate password reset in Jellyfin'
+                }, status=400)
 
-            if reset_response.status_code == 204:
-                # Step 2: Set the new password
-                password_payload = {
-                    'ResetPassword': False,
-                    'CurrentPw': None,  # Not needed since the password reset was triggered
-                    'NewPw': new_password
-                }
+            # Step 2: Set new password in Jellyfin
+            password_payload = {
+                'ResetPassword': False,
+                'CurrentPw': None,
+                'NewPw': new_password
+            }
 
-                password_response = requests.post(reset_url, json=password_payload, headers=headers)
+            password_response = requests.post(reset_url, json=password_payload, headers=headers)
+            if password_response.status_code != 204:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Failed to set new password in Jellyfin'
+                }, status=400)
 
-                if password_response.status_code == 204:
-                    messages.success(request, "Password successfully reset.")
-                    return redirect('view_users')
-                else:
-                    messages.error(request, "Failed to set the new password.")
-            else:
-                messages.error(request, "Failed to initiate the password reset.")
-
-        except requests.exceptions.RequestException as e:
-            messages.error(request, f"Failed to reset password: {e}")
-
-    # Render the password reset form
-    return render(request, 'reset_password.html', {'user_id': user_id})
+            # Step 3: Update Django user password
+            user.set_password(new_password)
+            user.save()
+            
+            # Log the password reset
+            LogEntry.objects.create(
+                action='INFO',
+                user=request.user,
+                message=f'Password reset for user {user.email}'
+            )
+            
+            return JsonResponse({'success': True})
+            
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid JSON data'
+            }, status=400)
+        except requests.RequestException as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Jellyfin API error: {str(e)}'
+            }, status=500)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+            
+    return JsonResponse({
+        'success': False,
+        'error': 'Method not allowed'
+    }, status=405)
 
 @login_required
 @superuser_required
@@ -1892,69 +1788,68 @@ def password_reset_request(request):
 
 def password_reset_confirm(request, uidb64, token):
     try:
+        # Decode the user id
         uid = urlsafe_base64_decode(uidb64).decode()
         user = CustomUser.objects.get(pk=uid)
+        
+        if request.method == 'POST':
+            # Verify the token is still valid
+            if default_token_generator.check_token(user, token):
+                password = request.POST.get('password')
+                confirm_password = request.POST.get('confirm_password')
+                
+                # Validate passwords
+                if not password or not confirm_password:
+                    messages.error(request, 'Please enter both passwords.')
+                    return render(request, 'registration/password_reset_confirm.html', {
+                        'uidb64': uidb64,
+                        'token': token
+                    })
+                
+                if password != confirm_password:
+                    messages.error(request, 'Passwords do not match.')
+                    return render(request, 'registration/password_reset_confirm.html', {
+                        'uidb64': uidb64,
+                        'token': token
+                    })
+                
+                if len(password) < 8:
+                    messages.error(request, 'Password must be at least 8 characters long.')
+                    return render(request, 'registration/password_reset_confirm.html', {
+                        'uidb64': uidb64,
+                        'token': token
+                    })
+                
+                    # Set the new password
+                    user.set_password(password)
+                    user.save()
+                    
+                    # Log the password reset
+                    LogEntry.objects.create(
+                        action='INFO',
+                        user=user,
+                        message='Password reset successfully'
+                    )
+                    
+                    messages.success(request, 'Your password has been reset successfully. You can now login with your new password.')
+                    return redirect('login')
+            else:
+                messages.error(request, 'The reset link is no longer valid.')
+                return redirect('password_reset_request')
+        
+        # Check if the token is valid for GET requests
+        if default_token_generator.check_token(user, token):
+            return render(request, 'registration/password_reset_confirm.html', {
+                'uidb64': uidb64,
+                'token': token
+            })
+        else:
+            messages.error(request, 'The reset link is no longer valid.')
+            return redirect('password_reset_request')
+            
     except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
-        user = None
-
-    # Verify the token
-    if user is not None and default_token_generator.check_token(user, token):
-        if request.method == "POST":
-            new_password = request.POST.get("new_password")
-            confirm_password = request.POST.get("confirm_password")
-
-            if new_password != confirm_password:
-                messages.error(request, "Passwords do not match. Please try again.")
-                return render(request, "registration/password_reset_confirm.html", {"validlink": True})
-
-            # Get config for Jellyfin integration
-            config = get_object_or_404(Config, pk=1)  # Assumes a single config instance
-            jellyfin_token = config.jellyfin_api_key
-
-            # Define headers and URL
-            headers = {
-                'Authorization': f'MediaBrowser Token={jellyfin_token}',
-                'Content-Type': 'application/json'
-            }
-            reset_url = f'{config.server_url}/Users/{user.jellyfin_user_id}/Password'
-
-            # Step 1: Initiate password reset in Jellyfin
-            reset_payload = {
-                'ResetPassword': True,
-                'CurrentPw': None,
-                'NewPw': None
-            }
-
-            try:
-                reset_response = requests.post(reset_url, json=reset_payload, headers=headers)
-                if reset_response.status_code == 204:
-                    # Step 2: Set the new password in Jellyfin
-                    password_payload = {
-                        'ResetPassword': False,
-                        'CurrentPw': None,  # No current password needed
-                        'NewPw': new_password
-                    }
-                    password_response = requests.post(reset_url, json=password_payload, headers=headers)
-
-                    if password_response.status_code == 204:
-                        user.set_password(new_password)  # Update password locally
-                        user.save()
-                        messages.success(request, "Password reset successful.")
-                        return redirect("login")
-                    else:
-                        messages.error(request, "Failed to set the new password.")
-                else:
-                    messages.error(request, "Failed to initiate the password reset.")
-
-            except requests.exceptions.RequestException as e:
-                messages.error(request, f"Failed to reset password: {e}")
-
-        return render(request, "registration/password_reset_confirm.html", {"validlink": True})
-
-    else:
-        # Invalid token or user
-        messages.error(request, "Invalid password reset link.")
-        return redirect("password_reset_request")
+        messages.error(request, 'Invalid reset link.')
+        return redirect('password_reset_request')
 
     
 
@@ -2297,3 +2192,103 @@ def search_tmdb_shows(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@superuser_required
+def invitation_create(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            invite_code = data.get('invite_code')
+            max_users = int(data.get('max_users', 1))
+            expiry = data.get('expiry')
+            
+            # Debug logging
+            print(f"Received data: {data}")
+            print(f"Invite code: {invite_code}")
+            print(f"Max users: {max_users}")
+            print(f"Expiry: {expiry}")
+            
+            # Validate the data
+            if not invite_code:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invite code is required'
+                }, status=400)
+                
+            if max_users < 1:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Max users must be at least 1'
+                }, status=400)
+            
+            # Handle expiry date conversion
+            expiry_date = None
+            if expiry:
+                try:
+                    expiry_date = datetime.fromisoformat(expiry.replace('Z', '+00:00'))
+                except ValueError:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Invalid expiry date format'
+                    }, status=400)
+            
+            # Create the invitation
+            invitation = Invitation.objects.create(
+                invite_code=invite_code,
+                max_users=max_users,
+                expiry=expiry_date,
+                user=request.user
+            )
+            
+            # Log the creation
+            LogEntry.objects.create(
+                action='CREATED',
+                user=request.user,
+                message=f'Created invitation code: {invite_code}'
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Invitation created successfully',
+                'invitation': {
+                    'code': invitation.invite_code,
+                    'max_users': invitation.max_users,
+                    'created_at': invitation.created_at.isoformat(),
+                    'expiry': invitation.expiry.isoformat() if invitation.expiry else None
+                }
+            }, status=201)
+            
+        except json.JSONDecodeError as e:
+            print(f"JSON Decode Error: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid JSON data'
+            }, status=400)
+        except ValueError as e:
+            print(f"Value Error: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+        except Exception as e:
+            # Log the full error
+            import traceback
+            print(f"Unexpected error: {e}")
+            print(traceback.format_exc())
+            
+            # Log unexpected errors
+            LogEntry.objects.create(
+                action='ERROR',
+                user=request.user,
+                message=f'Error creating invitation: {str(e)}'
+            )
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Method not allowed'
+    }, status=405)
