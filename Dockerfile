@@ -32,7 +32,6 @@ RUN chown -R app_user:app_user /app
 # Switch to non-root user
 USER app_user
 
-RUN python manage.py collectstatic --noinput
 
 # Expose port
 
