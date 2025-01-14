@@ -18,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 #### VERSION ####
 
-APP_VERSION = "v3.0.0"
+APP_VERSION = "v5.0.0"
 
 JELLYSEER_API_TOKEN = "MTcxODMwMzAzNTM1M2QzNWZjNjRhLWQzZGMtNDY4Yy04MmY0LTM1NjhjMjdmOTFlZA=="
 ### Licenseing Settings
@@ -33,9 +33,14 @@ LICENSING_SERVER_URL = 'http://192.168.0.93:8001/licenses'  # replace with actua
 SECRET_KEY = 'django-insecure-@1*ll#bwr*=jji#cqp15gpf4+5q8gftfh$5ul92ms(@%$bi-d$'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    'signup.ccmediastreaming.com',
+    'localhost',
+    '127.0.0.1',
+    '*'
+]
 
 
 
@@ -55,6 +60,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -62,8 +68,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     #'jellyfin_control.middleware.LicenseKeyMiddleware',
-    #'jellyfin_control.middleware.CheckJellyfinAccessTokenMiddleware',  # Add this line
-
+    #'jellyfin_control.middleware.CheckJellyfinAccessTokenMiddleware',
 ]
 
 ROOT_URLCONF = 'jellyfin_project.urls'
@@ -96,7 +101,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'jellyfin_control.context_processors.is_superuser',  # Add this line
+                'jellyfin_control.context_processors.is_superuser',
                 'jellyfin_control.context_processors.user_info',
                 'jellyfin_control.context_processors.check_default_invite',
 
@@ -160,13 +165,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # URL for serving static files
 STATIC_URL = '/static/'
 
-# This is where collectstatic will collect all static files
-#STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# Uncomment STATIC_ROOT and ensure it's properly set
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Additional locations the staticfiles app will traverse to find static files
+# Additional locations for static files
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'assets'),
 )
+
+# WhiteNoise configuration
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # settings.py
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -175,3 +183,28 @@ EMAIL_PORT = 587  # or 465 for SSL
 EMAIL_USE_TLS = True  # or EMAIL_USE_SSL = True if using port 465
 EMAIL_HOST_USER = 'brad.crampton2001@gmail.com'
 EMAIL_HOST_PASSWORD = 'sbyv npwj sodi yyzw'
+
+# CORS Settings
+CORS_ALLOWED_ORIGINS = [
+    "https://signup.ccmediastreaming.com",
+    "http://signup.ccmediastreaming.com",
+    "http://localhost:8056",
+    "http://127.0.0.1:8056",
+]
+
+# Also add your domain to CSRF trusted origins
+CSRF_TRUSTED_ORIGINS = [
+    "https://signup.ccmediastreaming.com",
+    "http://signup.ccmediastreaming.com",
+]
+
+# Session settings
+SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Login URL settings
+LOGIN_URL = '/'
+LOGIN_REDIRECT_URL = '/home/'
+LOGOUT_REDIRECT_URL = '/'

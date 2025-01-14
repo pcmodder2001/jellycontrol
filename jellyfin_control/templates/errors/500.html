@@ -1,12 +1,141 @@
 <!-- templates/errors/500.html -->
 {% extends "base.html" %}
+{% load static %}
+
+{% block title %}500 - Server Error{% endblock %}
 
 {% block content %}
-<div class="uk-section uk-section-small">
-    <div class="uk-container">
-        <h1 class="uk-heading-line"><span>500 - Server Error</span></h1>
-        <p>Sorry, there was an error on our end. Please try again later.</p>
-        <a href="{% url 'home' %}" class="uk-button uk-button-primary">Go back to Home</a>
+<div class="uk-container uk-container-small">
+    <div class="error-container uk-card uk-card-default uk-padding uk-margin-large-top uk-margin-large-bottom">
+        <!-- Logo -->
+        <div class="uk-text-center">
+            <img src="{% static 'images/custom_logo.png' %}" 
+                 alt="Logo" 
+                 width="150" 
+                 class="uk-margin-medium-bottom">
+        </div>
+
+        <!-- Error Icon -->
+        <div class="error-icon-container uk-text-center uk-margin-medium-bottom">
+            <div class="error-icon">
+                <span uk-icon="icon: server; ratio: 2"></span>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div class="uk-text-center">
+            <h1 class="uk-heading-small uk-margin-remove-bottom">500</h1>
+            <h2 class="uk-h3 uk-text-muted uk-margin-small-top">Server Error</h2>
+            <p class="uk-text-lead uk-text-muted uk-margin-medium-top">
+                Oops! Something went wrong on our end. Please try again later.
+            </p>
+        </div>
+
+        <!-- Action Button -->
+        <div class="uk-text-center uk-margin-large-top">
+            <a href="{% url 'home' %}" 
+               class="uk-button uk-button-primary uk-button-large">
+                <span uk-icon="home" class="uk-margin-small-right"></span>
+                Back to Home
+            </a>
+        </div>
     </div>
 </div>
+
+<style>
+.error-container {
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    margin: 0 auto;
+    animation: slideIn 0.5s ease-out;
+}
+
+.error-icon-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.error-icon {
+    background: #32d296;  /* Green for server */
+    color: white;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse 2s infinite;
+}
+
+.uk-button {
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.uk-button-primary {
+    background: #1e87f0;
+    box-shadow: 0 2px 8px rgba(30, 135, 240, 0.2);
+}
+
+.uk-button-primary:hover {
+    background: #0f7ae5;
+    box-shadow: 0 4px 12px rgba(30, 135, 240, 0.3);
+    transform: translateY(-1px);
+}
+
+.uk-heading-small {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: #32d296;  /* Match icon color */
+    line-height: 1;
+}
+
+.uk-text-lead {
+    font-size: 1.2rem;
+    line-height: 1.6;
+}
+
+.uk-text-muted {
+    color: var(--text-muted);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(50, 210, 150, 0.4);  /* Match icon color */
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(50, 210, 150, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(50, 210, 150, 0);
+    }
+}
+
+@media (max-width: 640px) {
+    .uk-heading-small {
+        font-size: 2.5rem;
+    }
+    
+    .uk-button-large {
+        padding: 0 15px;
+        line-height: 38px;
+        font-size: 0.875rem;
+    }
+}
+</style>
 {% endblock %}
