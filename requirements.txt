@@ -1,5 +1,23 @@
+# Core Django requirements
 Django>=3.2
-requests>=2.25.1
-pytz>=2021.1  # Required for timezone utilities
 django-cors-headers>=3.13.0
+
+# HTTP and API requirements
+requests>=2.25.1
+
+# Utility requirements
+pytz>=2021.1  # Required for timezone utilities
 packaging>=21.0  # For version comparison utilities
+
+# Security and authentication
+django-guardian>=2.4.0  # For object-level permissions
+python-dotenv>=0.19.0  # For environment variables
+
+# Database requirements
+mysqlclient>=2.1.0  # For MySQL support (optional)
+psycopg2-binary>=2.9.1  # For PostgreSQL support (optional)
+
+# Development and debugging
+django-debug-toolbar>=3.2.4  # For development debugging
+whitenoise>=5.3.0  # For serving static files
+gunicorn>=20.1.0  # For production server
