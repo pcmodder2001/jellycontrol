@@ -32,11 +32,8 @@ RUN chown -R app_user:app_user /app
 # Switch to non-root user
 USER app_user
 
-# Run migrations and collect static files
 RUN python manage.py collectstatic --noinput
 
 # Expose port
-EXPOSE $PORT
 
 # Start Gunicorn
-CMD ["sh", "-c", "python manage.py migrate && gunicorn jellyfin_project.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120"]
