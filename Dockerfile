@@ -36,3 +36,4 @@ USER app_user
 # Expose port
 
 # Start Gunicorn
+CMD ["sh", "-c", "python manage.py migrate && gunicorn jellyfin_project.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120"]
