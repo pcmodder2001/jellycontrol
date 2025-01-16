@@ -122,7 +122,6 @@ class LogEntry(models.Model):
         ('SETUP', 'Setup'),
         ('DOWNLOAD', 'Download'),
         ('UPLOAD', 'Upload'),
-        # Add more actions as needed
     ]
 
     action = models.CharField(max_length=20, choices=ACTION_CHOICES)
@@ -131,7 +130,7 @@ class LogEntry(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='log_entries'
+        related_name='jellyfin_log_entries'
     )
     message = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
