@@ -34,6 +34,7 @@ from django.core.management import call_command
 import re
 import random
 import string
+from django.db import IntegrityError
 
 
 
@@ -113,64 +114,134 @@ def generate_api_key_view(request):
     
 def setup(request):
     if request.method == 'POST':
-        step = request.POST.get('step')
         
+        step = request.POST.get('step')
+        user = request.user if request.user.is_authenticated else None
+
+        # Step 1: Save Server URL
         if step == '1':
-            # Handle server URL validation
             server_url = request.POST.get('server_url')
             if not server_url:
-                return JsonResponse({'success': False, 'error': 'Server URL is required'})
-            
-            # Save server URL
-            config, created = Config.objects.get_or_create(pk=1)
-            config.server_url = server_url
-            config.save()
-            
+                log_action('ERROR', 'Server URL is required.', user)
+                messages.error(request,"Server URL is required.")
+            request.session['server_url'] = server_url
+            log_action('SETUP', 'Server URL saved.', user)
             return JsonResponse({'success': True, 'step': '2'})
-            
+
+        # Step 2: Authenticate Admin
         elif step == '2':
-            # Handle admin credentials
-            # Your existing step 2 code...
-            return JsonResponse({'success': True, 'step': '3'})
+            server_url = request.session.get('server_url')
+            username = request.POST.get('username')
+            password = request.POST.get('password')
             
-        elif step == '3':
-            # Handle user sync
-            # Your existing step 3 code...
-            return JsonResponse({'success': True, 'step': '4'})
-            
-        elif step == '4':
+            if not server_url or not username or not password:
+                log_action('ERROR', 'Server URL, username, and password are required.', user)
+                messages.error(request,"Server URL, username, and password are required.")
+                return redirect("setup")
             try:
-                # Generate and save API key
-                config = Config.objects.first()
-                if not config:
-                    return JsonResponse({'success': False, 'error': 'Configuration not found'})
-                
-                # Your API key generation logic here
-                api_key = generate_api_key()  # Your function to generate API key
-                config.jellyfin_api_key = api_key
-                config.save()
-                
-                # Log the setup completion
-                LogEntry.objects.create(
-                    action='SETUP',
-                    user=request.user,
-                    message='Setup completed successfully'
-                )
-                
-                # Return success with redirect URL
-                return JsonResponse({
-                    'success': True,
-                    'redirect_url': reverse('home'),
-                    'message': 'Setup completed successfully'
-                })
-                
+                token = authenticate_admin(request, server_url, username, password)
+                if token:
+                    request.session['token'] = token
+                    log_action('SETUP', 'Admin authenticated successfully.', user)
+                    return JsonResponse({'success': True, 'step': '3'})
+                else:
+                    log_action('ERROR', 'Authentication failed.', user)
+                    return JsonResponse({'success': False, 'error': "Authentication failed."})
             except Exception as e:
+                log_action('ERROR', f'Authentication failed: {str(e)}', user)
+                return JsonResponse({'success': False, 'error': str(e)})
+
+        # Step 3: Sync Users
+        elif step == '3':
+            server_url = request.session.get('server_url')
+            token = request.session.get('token')
+            
+            if not server_url or not token:
+                log_action('ERROR', 'Server URL and token are required.', user)
+                messages.error(request,"Server URL and token are required.")
+                return redirect("setup")
+            try:
+                sync_users(server_url, token)
+                
+                # Save the server URL in Config model
+                config, created = Config.objects.get_or_create(id=1)
+                config.server_url = server_url
+                config.save()
+
+                log_action('SETUP', 'Users synced successfully.', user)
+
+                # Proceed to step 4 (get/generate API key)
+                return JsonResponse({'success': True, 'step': '4'})
+            except Exception as e:
+                log_action('ERROR', f'Failed to sync users: {str(e)}', user)
+                return JsonResponse({'success': False, 'error': str(e)})
+
+        # Step 4: Generate and Retrieve API Key
+        elif step == '4':
+            server_url = request.session.get('server_url')
+            token = request.session.get('token')
+
+            if not server_url or not token:
+                log_action('ERROR', 'Server URL and token are required.', user)
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'Server URL and token are required.'
+                })
+
+            try:
+                # Step 1: Make POST request to generate API key
+                create_key_url = f"{server_url}/Auth/Keys?app=JellyfinControlApp"
+                headers = {
+                    'X-Emby-Token': token,
+                    'Content-Type': 'application/json'
+                }
+                create_response = requests.post(create_key_url, headers=headers)
+
+                if create_response.status_code == 204:
+                    # Step 2: Make GET request to retrieve the newly generated API key
+                    get_keys_url = f"{server_url}/Auth/Keys"
+                    get_response = requests.get(get_keys_url, headers=headers)
+
+                    if get_response.status_code == 200:
+                        api_keys = get_response.json().get('Items', [])
+                        if api_keys and len(api_keys) > 0:
+                            # Save the API key in the Config model
+                            api_key = api_keys[-1]['AccessToken']
+                            config, created = Config.objects.get_or_create(id=1)
+                            config.jellyfin_api_key = api_key
+                            config.save()
+
+                            log_action('INFO', 'API key created and saved.', user)
+                            
+                            # Return JSON response for AJAX
+                            return JsonResponse({
+                                'success': True,
+                                'message': 'Setup completed successfully',
+                                'redirect_url': reverse('login')
+                            })
+                        else:
+                            return JsonResponse({
+                                'success': False,
+                                'error': "No API key found after creation."
+                            })
+                    else:
+                        return JsonResponse({
+                            'success': False,
+                            'error': f"Failed to retrieve API keys: {get_response.status_code}"
+                        })
+                else:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f"Failed to create API key: {create_response.status_code}"
+                    })
+
+            except Exception as e:
+                log_action('ERROR', f'Error in API key creation process: {str(e)}', user)
                 return JsonResponse({
                     'success': False,
                     'error': str(e)
                 })
-    
-    # GET request - show setup page
+
     return render(request, 'control/setup.html')
 
 
@@ -196,7 +267,7 @@ def authenticate_admin(request, server_url, username, password):
         is_admin = data.get('User', {}).get('Policy', {}).get('IsAdministrator', False)
 
         if is_admin:
-            messages.success(request, "Authentication successful. User is an administrator.")
+           
             
             # Fetch or create the user in the Django database
      
@@ -212,6 +283,7 @@ def authenticate_admin(request, server_url, username, password):
 
 def sync_users(server_url, token):
     """Sync users from Jellyfin to Django database."""
+    print("Starting sync_users function...")
     users_url = f"{server_url}/Users"
     headers = {
         "X-Emby-Token": token
@@ -220,53 +292,65 @@ def sync_users(server_url, token):
     try:
         response = requests.get(users_url, headers=headers)
         if response.status_code == 200:
-            jellyfin_users = response.json()
-            jellyfin_user_ids = {user['Id'] for user in jellyfin_users}
+            users = response.json()
             
-            for jellyfin_user in jellyfin_users:
-                jellyfin_id = jellyfin_user.get('Id')
-                email = jellyfin_user.get('Name')
-                is_admin = jellyfin_user.get('Policy', {}).get('IsAdministrator', False)
+            for user in users:
+                jellyfin_user_id = user.get('Id')
+                email = user.get('Name')
+                is_admin = user.get('Policy', {}).get('IsAdministrator', False)
+                
+                print(f"Processing user: ID={jellyfin_user_id}, Email={email}, IsAdmin={is_admin}")
                 
                 try:
-                    # First try to get user by jellyfin_id
-                    db_user = CustomUser.objects.filter(jellyfin_user_id=jellyfin_id).first()
-                    
+                    # Try to get existing user by jellyfin_user_id first
+                    db_user = CustomUser.objects.filter(jellyfin_user_id=jellyfin_user_id).first()
                     if not db_user:
-                        # If not found by jellyfin_id, try by email
+                        # If not found by ID, try by email
                         db_user = CustomUser.objects.filter(email=email).first()
-                        if db_user:
-                            # Update existing user's jellyfin_id
-                            db_user.jellyfin_user_id = jellyfin_id
-                        else:
-                            # Create new user with unique username
-                            username = f"jellyfin_{jellyfin_id}"
-                            db_user = CustomUser(
-                                username=username,
-                                email=email,
-                                jellyfin_user_id=jellyfin_id
-                            )
                     
-                    # Update user attributes
-                    db_user.is_superuser = is_admin
-                    db_user.is_staff = is_admin
-                    db_user.save()
-                    
-                except Exception as e:
-                    log_action('ERROR', f'Error syncing user {email}: {str(e)}')
+                    if db_user:
+                        # Update existing user
+                        db_user.jellyfin_user_id = jellyfin_user_id
+                        db_user.email = email
+                        db_user.is_superuser = is_admin
+                        db_user.is_staff = is_admin
+                        db_user.save()
+                        print(f"Updated existing user: {email} (Admin: {is_admin})")
+                    else:
+                        # Create new user
+                        db_user = CustomUser.objects.create(
+                            email=email,
+                            jellyfin_user_id=jellyfin_user_id,
+                            is_superuser=is_admin,
+                            is_staff=is_admin
+                        )
+                        print(f"Created new user: {email} (Admin: {is_admin})")
+                        
+                except IntegrityError as e:
+                    print(f"Error processing user {email}: {str(e)}")
+                    # Try to update existing user if there's a conflict
+                    try:
+                        db_user = CustomUser.objects.get(email=email)
+                        db_user.jellyfin_user_id = jellyfin_user_id
+                        db_user.is_superuser = is_admin
+                        db_user.is_staff = is_admin
+                        db_user.save()
+                        print(f"Updated user after conflict: {email} (Admin: {is_admin})")
+                    except Exception as e2:
+                        print(f"Failed to update user after conflict: {str(e2)}")
                     continue
-            
-            # Delete Django users that are no longer in Jellyfin
-            CustomUser.objects.exclude(jellyfin_user_id__in=jellyfin_user_ids).delete()
+                    
             return True
             
         else:
-            log_action('ERROR', f'Failed to retrieve users: {response.status_code}')
+            print(f"Failed to retrieve users: {response.status_code}")
             return False
             
     except Exception as e:
-        log_action('ERROR', f'Error in sync_users: {str(e)}')
+        print(f"Error in sync_users: {str(e)}")
         return False
+
+
 
 
 def authenticate_with_jellyfin(email, password, ):

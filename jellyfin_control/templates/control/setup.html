@@ -310,5 +310,33 @@
             });
         });
     });
+
+    function handleStep4() {
+        $.ajax({
+            url: '',
+            type: 'POST',
+            data: {
+                'step': '4',
+                'csrfmiddlewaretoken': csrf_token
+            },
+            success: function(response) {
+                if (response.success) {
+                    showSuccess('Setup completed successfully!');
+                    // Redirect to login page
+                    window.location.href = response.redirect_url;
+                } else {
+                    showError(response.error || 'Failed to complete setup');
+                }
+            },
+            error: function(xhr) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    showError(response.error || 'An error occurred during setup');
+                } catch(e) {
+                    showError('An unexpected error occurred');
+                }
+            }
+        });
+    }
 </script>
 {% endblock %}
