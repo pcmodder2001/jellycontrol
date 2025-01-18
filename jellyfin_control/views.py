@@ -1873,7 +1873,7 @@ def password_reset_request(request):
     return render(request, "registration/password_reset_request.html")
 
 
-@login_required
+
 def password_reset_confirm(request, uidb64, token):
     try:
         # Decode the user id
