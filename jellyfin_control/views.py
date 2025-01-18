@@ -1893,42 +1893,55 @@ def password_reset_confirm(request, uidb64, token):
                 return redirect('password_reset_confirm', uidb64=uidb64, token=token)
             
             if default_token_generator.check_token(user, token):
-                # Update password in Django
-                user.set_password(password)
-                user.save()
-                
-                # Update password in Jellyfin
+                # Get Jellyfin config
                 config = Config.objects.first()
-                if config:
-                    try:
-                        headers = {
-                            'Content-Type': 'application/json',
-                            'X-Emby-Token': request.session.get('jellyfin_access_token')
-                        }
-                        
-                        reset_url = f'{config.server_url}/Users/{user.jellyfin_user_id}/Password'
-                        payload = {
-                            'ResetPassword': False,
-                            'NewPw': password
-                        }
-                        
-                        response = requests.post(reset_url, json=payload, headers=headers)
-                        if response.status_code == 204:
-                            messages.success(request, 'Password has been reset successfully.')
-                            log_action('INFO', f'Password reset successful for user {user.email}', user)
-                        else:
-                            messages.warning(request, 'Password updated in Django but failed to update in Jellyfin.')
-                            log_action('WARNING', f'Jellyfin password reset failed for user {user.email}', user)
+                if not config:
+                    messages.error(request, 'Jellyfin configuration not found.')
+                    return redirect('login')
+
+                try:
+                    # First update password in Jellyfin
+                    reset_url = f'{config.server_url}/Users/{user.jellyfin_user_id}/Password'
                     
-                    except Exception as e:
-                        messages.warning(request, 'Password updated in Django but failed to update in Jellyfin.')
-                        log_action('ERROR', f'Jellyfin password reset error: {str(e)}', user)
-                
-                return redirect('login')
+                    # Step 1: Reset the password
+                    reset_payload = {
+                        'ResetPassword': True
+                    }
+                    headers = {
+                        'Content-Type': 'application/json',
+                        'X-Emby-Token': config.jellyfin_api_key
+                    }
+                    
+                    reset_response = requests.post(reset_url, json=reset_payload, headers=headers)
+                    if reset_response.status_code != 204:
+                        raise Exception(f'Failed to reset Jellyfin password: {reset_response.status_code}')
+
+                    # Step 2: Set the new password
+                    new_password_payload = {
+                        'ResetPassword': False,
+                        'NewPw': password
+                    }
+                    
+                    set_response = requests.post(reset_url, json=new_password_payload, headers=headers)
+                    if set_response.status_code != 204:
+                        raise Exception(f'Failed to set new Jellyfin password: {set_response.status_code}')
+
+                    # If Jellyfin update successful, update Django password
+                    user.set_password(password)
+                    user.save()
+                    
+                    messages.success(request, 'Password has been reset successfully.')
+                    log_action('INFO', f'Password reset successful for user {user.email}', user)
+                    return redirect('login')
+                    
+                except Exception as e:
+                    messages.error(request, f'Failed to reset password: {str(e)}')
+                    log_action('ERROR', f'Password reset failed for user {user.email}: {str(e)}', user)
+                    return redirect('password_reset')
             else:
                 messages.error(request, 'Password reset link is invalid or has expired.')
                 return redirect('password_reset')
-        
+                
         return render(request, 'registration/password_reset_confirm.html', {
             'uidb64': uidb64,
             'token': token
@@ -1936,7 +1949,6 @@ def password_reset_confirm(request, uidb64, token):
         
     except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist) as e:
         messages.error(request, 'Invalid password reset link.')
-        log_action('ERROR', f'Password reset error: {str(e)}')
         return redirect('password_reset')
 
     
