@@ -4,14 +4,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from jellyfin_project import settings
-from .models import Config, CustomUser, Function, Invitation, License, LogEntry
+from .models import Config, CustomUser, Function, Invitation, License, LogEntry, EmailSettings
 import requests
 from django.contrib.auth import login
 from django.http import HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from datetime import datetime
-from jellyfin_control.forms import  ConfigForm
+from jellyfin_control.forms import  ConfigForm, EmailSettingsForm
 from django.utils import timezone
 from django.contrib.auth import logout as django_logout
 from django.core.paginator import Paginator
@@ -1238,20 +1238,53 @@ def view_license(request):
 
 @login_required
 @superuser_required
-def settings_view(request):
-    # Get the first config object or create one if it doesn't exist
-    config, created = Config.objects.get_or_create(pk=1)
+def settings(request):
+    config = Config.objects.first()
+    email_settings = EmailSettings.objects.first()
     
     if request.method == 'POST':
-        form = ConfigForm(request.POST, instance=config)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Settings updated successfully.')
-        return redirect('settings')
+        if 'update_config' in request.POST:
+            form = ConfigForm(request.POST, instance=config)
+            email_form = EmailSettingsForm(instance=email_settings)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Server settings updated successfully.')
+                return redirect('settings')
+        elif 'update_email' in request.POST:
+            email_form = EmailSettingsForm(request.POST, instance=email_settings)
+            form = ConfigForm(instance=config)
+            if email_form.is_valid():
+                email_form.save()
+                # Update email settings
+                from . import email_config
+                email_config.update_email_settings()
+                messages.success(request, 'Email settings updated successfully.')
+                return redirect('settings')
     else:
         form = ConfigForm(instance=config)
-    
-    return render(request, 'settings.html', {'form': form})
+        email_form = EmailSettingsForm(instance=email_settings)
+
+    return render(request, 'settings.html', {
+        'form': form,
+        'email_form': email_form
+    })
+
+@login_required
+@superuser_required
+def test_email(request):
+    if request.method == 'POST':
+        try:
+            send_mail(
+                'Test Email from Jellycontrol',
+                'This is a test email from your Jellycontrol installation.',
+                settings.EMAIL_HOST_USER,
+                [request.user.email],
+                fail_silently=False,
+            )
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 @login_required
 @superuser_required
@@ -2195,57 +2228,89 @@ def titles_match(search_title, movie_title):
 
 @login_required
 def proxy_jellyseerr_request(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-
-    config = Config.objects.first()
-    if not config or not config.jellyseerr_url or not config.jellyseerr_api_key:
-        return JsonResponse({'error': 'Jellyseerr configuration not found'}, status=400)
-
     try:
-        # Get the request data from the body
-        request_data = json.loads(request.body)
-        
-        # Log the request for debugging
-        print("Jellyseerr Request Data:", request_data)
-        print("Jellyseerr URL:", config.jellyseerr_url)
-        
-        # Forward the request to Jellyseerr
-        response = requests.post(
-            f'{config.jellyseerr_url.rstrip("/")}/api/v1/request',
-            headers={
-                'X-Api-Key': config.jellyseerr_api_key,
-                'Content-Type': 'application/json'
-            },
-            json=request_data,
-            timeout=10  # Add timeout
-        )
-        
-        # Log the response for debugging
-        print("Jellyseerr Response:", response.status_code)
-        print("Jellyseerr Response Content:", response.text)
-        
-        if response.status_code == 400:
+        # Get Jellyseerr configuration
+        config = Config.objects.first()
+        if not config or not config.jellyseerr_url or not config.jellyseerr_api_key:
             return JsonResponse({
-                'error': 'Bad request to Jellyseerr',
-                'details': response.text
+                'success': False,
+                'error': 'Jellyseerr configuration is missing'
             }, status=400)
-            
-        response.raise_for_status()
-        return JsonResponse(response.json() if response.text else {'success': True}, 
-                          status=response.status_code)
-                          
+
+        # Get request data
+        data = json.loads(request.body)
+        
+        # Check if media already exists in Jellyseerr
+        media_type = data.get('mediaType', '')
+        media_id = data.get('mediaId')
+        check_url = f"{config.jellyseerr_url}/api/v1/media/{media_type}/{media_id}"
+        
+        headers = {
+            'X-Api-Key': config.jellyseerr_api_key,
+            'Content-Type': 'application/json'
+        }
+
+        # Check if media already exists
+        check_response = requests.get(check_url, headers=headers)
+        if check_response.status_code == 200:
+            media_data = check_response.json()
+            # Check both status and existing tvdbId
+            if media_data.get('mediaInfo', {}).get('status') == 'PENDING':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'This media has already been requested'
+                }, status=409)
+
+        # Prepare request data - only include tvdbId for TV shows
+        request_data = {
+            'mediaType': media_type,
+            'mediaId': media_id,
+            'is4k': data.get('is4k', False),
+            'serverId': 1,
+            'profileId': 1,
+            'rootFolder': data.get('rootFolder', ''),
+            'languageProfileId': data.get('languageProfileId', 1),
+            'userId': request.user.id
+        }
+
+        # Only add tvdbId and seasons for TV shows
+        if media_type.lower() == 'tv':
+            request_data['tvdbId'] = data.get('tvdbId')
+            request_data['seasons'] = data.get('seasons', [])
+
+        # Make the request
+        request_url = f"{config.jellyseerr_url}/api/v1/request"
+        response = requests.post(request_url, headers=headers, json=request_data)
+        
+        if response.status_code in [200, 201]:
+            log_action('INFO', f'Media request successful: {media_type} ID {media_id}', request.user)
+            return JsonResponse({
+                'success': True,
+                'message': 'Request submitted successfully'
+            })
+        else:
+            error_message = response.json().get('message', 'Unknown error occurred')
+            if 'UNIQUE constraint failed: media.tvdbId' in error_message:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'This show has already been requested or added to the library'
+                }, status=409)
+            log_action('ERROR', f'Media request failed: {error_message}', request.user)
+            return JsonResponse({
+                'success': False,
+                'error': error_message
+            }, status=response.status_code)
+
     except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
-    except requests.RequestException as e:
         return JsonResponse({
-            'error': 'Failed to connect to Jellyseerr',
-            'details': str(e)
-        }, status=500)
+            'success': False,
+            'error': 'Invalid JSON data'
+        }, status=400)
     except Exception as e:
+        log_action('ERROR', f'Request proxy error: {str(e)}', request.user)
         return JsonResponse({
-            'error': 'Unexpected error',
-            'details': str(e)
+            'success': False,
+            'error': str(e)
         }, status=500)
 
 @login_required

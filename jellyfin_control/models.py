@@ -142,3 +142,32 @@ class LogEntry(models.Model):
 
     def __str__(self):
         return f"{self.get_action_display()} - {self.user} - {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+    
+    
+class EmailSettings(models.Model):
+    company_name = models.CharField(max_length=100, default='Company Name')
+    from_email = models.EmailField(
+        verbose_name='From Email',
+        help_text='Email address that will be used to send emails'
+    )
+    site_url = models.URLField(
+        verbose_name='Site URL',
+        help_text='Base URL of your site (e.g., https://example.com)',
+        default='http://localhost:8000'
+    )
+    support_email = models.EmailField(
+        verbose_name='Support Email',
+        help_text='Email address for support inquiries'
+    )
+    smtp_host = models.CharField(max_length=100, default='smtp.gmail.com')
+    smtp_port = models.IntegerField(default=587)
+    smtp_username = models.CharField(max_length=100, blank=True)
+    smtp_password = models.CharField(max_length=100, blank=True)
+    use_tls = models.BooleanField(default=True)
+    use_ssl = models.BooleanField(default=False)
+    class Meta:
+        verbose_name = 'Email Settings'
+        verbose_name_plural = 'Email Settings'
+
+    def __str__(self):
+        return f"Email Settings - {self.company_name}"

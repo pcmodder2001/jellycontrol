@@ -1,322 +1,224 @@
 {% extends 'base.html' %}
-
-{% block title %}Settings{% endblock %}
+{% load static %}
 
 {% block content %}
 <div class="uk-container">
-    <!-- Page Header -->
-    <h1 class="uk-heading-line uk-text-center">
-        <span>System Settings</span>
-    </h1>
+    <h1 class="uk-heading-medium uk-text-center">Settings</h1>
 
-    <!-- Settings Form -->
-    <div class="uk-grid uk-child-width-1-1 uk-child-width-2-3@m uk-flex-center" uk-grid>
-        <div>
-            <form method="post" class="uk-form-stacked">
-                {% csrf_token %}
-                
-                <!-- Jellyfin Configuration -->
+    <!-- Settings Tabs -->
+    <div class="settings-container">
+        <!-- Top Navigation Tabs -->
+        <ul class="uk-tab uk-flex-center" uk-tab="connect: #settings-content; animation: uk-animation-fade">
+            <li><a href="#"><span uk-icon="icon: server" class="uk-margin-small-right"></span>Server</a></li>
+            <li><a href="#"><span uk-icon="icon: play-circle" class="uk-margin-small-right"></span>Jellyseerr</a></li>
+            <li><a href="#"><span uk-icon="icon: video-camera" class="uk-margin-small-right"></span>TMDB</a></li>
+            <li><a href="#"><span uk-icon="icon: mail" class="uk-margin-small-right"></span>Email</a></li>
+        </ul>
+
+        <!-- Content Area -->
+        <ul id="settings-content" class="uk-switcher">
+            <!-- Server Settings Tab -->
+            <li>
                 <div class="settings-card">
-                    <h3 class="uk-card-title">
-                        <span uk-icon="server" class="uk-margin-small-right"></span>
-                        Jellyfin Configuration
-                    </h3>
-                    <div class="uk-margin">
-                        <label class="uk-form-label" for="{{ form.server_url.id_for_label }}">Server URL</label>
-                        <div class="uk-form-controls">
-                            {{ form.server_url }}
-                        </div>
-                    </div>
-                    <div class="uk-margin">
-                        <label class="uk-form-label">Jellyfin API Key</label>
-                        <div class="uk-form-controls">
-                            <div class="uk-flex uk-flex-middle">
-                                <div class="uk-width-2-3">
-                                    <input class="uk-input" 
-                                           type="text" 
-                                           name="jellyfin_api_key" 
-                                           value="{{ form.jellyfin_api_key.value|default:'' }}" 
-                                           readonly>
+                    <h2 class="uk-card-title">Jellyfin Server Configuration</h2>
+                    <div class="settings-form-container">
+                        <form method="post" class="uk-form-stacked">
+                            {% csrf_token %}
+                            <div class="uk-margin">
+                                <label class="uk-form-label">Server URL</label>
+                                <div class="uk-form-controls">
+                                    {{ form.server_url }}
                                 </div>
-                                <button type="button" 
-                                        class="uk-button uk-button-primary uk-margin-small-left" 
-                                        onclick="generateApiKey()"
-                                        id="generate-api-key-btn">
-                                    <span uk-icon="refresh" class="uk-margin-small-right"></span>
-                                    Generate API Key
-                                </button>
                             </div>
-                        </div>
-                    </div>
-                    <div class="uk-margin">
-                        <label class="uk-form-label" for="{{ form.invite_code.id_for_label }}">Invite Code</label>
-                        <div class="uk-form-controls">
-                            {{ form.invite_code }}
-                        </div>
+                            <div class="uk-margin">
+                                <label class="uk-form-label">API Key</label>
+                                <div class="uk-form-controls">
+                                    {{ form.jellyfin_api_key }}
+                                </div>
+                            </div>
+                            <button type="submit" name="update_config" class="uk-button uk-button-primary">Save Server Settings</button>
+                        </form>
                     </div>
                 </div>
+            </li>
 
-                <!-- TMDB Configuration -->
+            <!-- Jellyseerr Tab -->
+            <li>
                 <div class="settings-card">
-                    <h3 class="uk-card-title">
-                        <span uk-icon="video-camera" class="uk-margin-small-right"></span>
-                        TMDB Configuration
-                    </h3>
-                    <div class="uk-margin">
-                        <label class="uk-form-label" for="{{ form.tmdb_access_token.id_for_label }}">TMDB Access Token</label>
-                        <div class="uk-form-controls">
-                            {{ form.tmdb_access_token }}
-                        </div>
-                    </div>
-                    <div class="uk-margin">
-                        <label class="uk-form-label" for="{{ form.tmdb_api_key.id_for_label }}">TMDB API Key</label>
-                        <div class="uk-form-controls">
-                            {{ form.tmdb_api_key }}
-                        </div>
+                    <h2 class="uk-card-title">Jellyseerr Configuration</h2>
+                    <div class="settings-form-container">
+                        <form method="post" class="uk-form-stacked">
+                            {% csrf_token %}
+                            <div class="uk-margin">
+                                <label class="uk-form-label">Jellyseerr URL</label>
+                                <div class="uk-form-controls">
+                                    {{ form.jellyseerr_url }}
+                                </div>
+                            </div>
+                            <div class="uk-margin">
+                                <label class="uk-form-label">API Key</label>
+                                <div class="uk-form-controls">
+                                    {{ form.jellyseerr_api_key }}
+                                </div>
+                            </div>
+                            <button type="submit" name="update_config" class="uk-button uk-button-primary">Save Jellyseerr Settings</button>
+                        </form>
                     </div>
                 </div>
+            </li>
 
-                <!-- Jellyseer Configuration -->
+            <!-- TMDB Tab -->
+            <li>
                 <div class="settings-card">
-                    <h3 class="uk-card-title">
-                        <span uk-icon="search" class="uk-margin-small-right"></span>
-                        Jellyseer Configuration
-                    </h3>
-                    <div class="uk-margin">
-                        <label class="uk-form-label" for="{{ form.jellyseerr_url.id_for_label }}">Jellyseerr URL</label>
-                        <div class="uk-form-controls">
-                            {{ form.jellyseerr_url }}
-                        </div>
-                    </div>
-                    <div class="uk-margin">
-                        <label class="uk-form-label" for="{{ form.jellyseerr_api_key.id_for_label }}">Jellyseerr API Key</label>
-                        <div class="uk-form-controls">
-                            {{ form.jellyseerr_api_key }}
-                        </div>
+                    <h2 class="uk-card-title">TMDB Configuration</h2>
+                    <div class="settings-form-container">
+                        <form method="post" class="uk-form-stacked">
+                            {% csrf_token %}
+                            <div class="uk-margin">
+                                <label class="uk-form-label">Access Token</label>
+                                <div class="uk-form-controls">
+                                    {{ form.tmdb_access_token }}
+                                </div>
+                            </div>
+                            <div class="uk-margin">
+                                <label class="uk-form-label">API Key</label>
+                                <div class="uk-form-controls">
+                                    {{ form.tmdb_api_key }}
+                                </div>
+                            </div>
+                            <button type="submit" name="update_config" class="uk-button uk-button-primary">Save TMDB Settings</button>
+                        </form>
                     </div>
                 </div>
+            </li>
 
-                <!-- Submit Button -->
-                <div class="uk-margin">
-                    <button type="submit" class="uk-button uk-button-primary uk-width-1-1">
-                        <span uk-icon="check" class="uk-margin-small-right"></span>
-                        Save Settings
-                    </button>
-                </div>
-
-                <!-- Database Management -->
+            <!-- Email Tab -->
+            <li>
                 <div class="settings-card">
-                    <h3 class="uk-card-title">
-                        <span uk-icon="database" class="uk-margin-small-right"></span>
-                        Database Management
-                    </h3>
-                    <div class="uk-margin">
-                        <a href="{% url 'download_database' %}" class="uk-button uk-button-secondary uk-width-1-1 uk-margin-small-bottom">
-                            <span uk-icon="download" class="uk-margin-small-right"></span>
-                            Download Database
-                        </a>
-                        <button type="button" 
-                                class="uk-button uk-button-default uk-width-1-1" 
-                                onclick="showUploadModal()">
-                            <span uk-icon="upload" class="uk-margin-small-right"></span>
-                            Upload Database
-                        </button>
+                    <h2 class="uk-card-title">Email Configuration</h2>
+                    <div class="settings-form-container">
+                        <form method="post" class="uk-form-stacked">
+                            {% csrf_token %}
+                            {% for field in email_form %}
+                            <div class="uk-margin">
+                                <label class="uk-form-label" for="{{ field.id_for_label }}">
+                                    {{ field.label }}
+                                </label>
+                                <div class="uk-form-controls">
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                    <div class="uk-text-small uk-text-muted">{{ field.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                            <button type="submit" name="update_email" class="uk-button uk-button-primary">Save Email Settings</button>
+                        </form>
                     </div>
                 </div>
-            </form>
-        </div>
+            </li>
+        </ul>
     </div>
 </div>
 
-<script>
-function showUploadModal() {
-    Swal.fire({
-        title: 'Upload Database',
-        html: `
-            <div class="uk-alert uk-alert-warning uk-margin-small-bottom">
-                <p class="uk-margin-remove">Upload a database file to replace the current one. Please proceed with caution as this action will overwrite the existing database.</p>
-            </div>
-            <form id="uploadForm" method="post" enctype="multipart/form-data" action="{% url 'upload_database' %}">
-                {% csrf_token %}
-                <input type="file" name="database" class="uk-input" required>
-            </form>
-        `,
-        showCancelButton: true,
-        confirmButtonText: 'Upload',
-        cancelButtonText: 'Cancel',
-        allowOutsideClick: false,
-        allowEscapeKey: true,
-        backdrop: true,
-        customClass: {
-            popup: 'swal-custom-popup',
-            container: 'swal-custom-container',
-            confirmButton: 'uk-button uk-button-primary',
-            cancelButton: 'uk-button uk-button-default uk-margin-left'
-        },
-        preConfirm: () => {
-            const form = document.getElementById('uploadForm');
-            const formData = new FormData(form);
-            
-            return fetch(form.action, {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(response.statusText);
-                }
-                return response;
-            })
-            .catch(error => {
-                Swal.showValidationMessage(
-                    `Upload failed: ${error}`
-                );
-            });
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            Swal.fire({
-                title: 'Success!',
-                text: 'Database uploaded successfully',
-                icon: 'success',
-                confirmButtonClass: 'uk-button uk-button-primary'
-            }).then(() => {
-                window.location.reload();
-            });
-        }
-    });
-}
-
-function generateApiKey() {
-    const button = document.getElementById('generate-api-key-btn');
-    const originalText = button.innerHTML;
-    
-    // Disable button and show loading state
-    button.disabled = true;
-    button.innerHTML = '<div uk-spinner></div> Generating...';
-    
-    fetch('{% url "generate_api_key" %}', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            UIkit.notification({
-                message: data.message || 'API key generated successfully',
-                status: 'success',
-                pos: 'top-right',
-                timeout: 5000
-            });
-            // Reload the page to show the new API key
-            window.location.reload();
-        } else {
-            throw new Error(data.error || 'Failed to generate API key');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        UIkit.notification({
-            message: error.message,
-            status: 'danger',
-            pos: 'top-right',
-            timeout: 5000
-        });
-    })
-    .finally(() => {
-        // Reset button state
-        button.disabled = false;
-        button.innerHTML = originalText;
-    });
-}
-</script>
-
 <style>
+.settings-container {
+    margin-top: 30px;
+}
+
+.uk-tab {
+    margin-bottom: 30px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.uk-tab > li > a {
+    color: var(--text-color);
+    border: none;
+    position: relative;
+    padding: 15px 20px;
+    font-weight: 500;
+}
+
+.uk-tab > li.uk-active > a {
+    color: var(--primary-color);
+}
+
+.uk-tab > li.uk-active > a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary-color);
+}
+
+.settings-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 30px;
+    margin: 0 auto;
+    max-width: 800px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.settings-form-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.settings-card h2 {
+    color: var(--text-color);
+    margin-bottom: 30px;
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.uk-form-label {
+    color: var(--text-color);
+    font-weight: 500;
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+}
+
+.uk-form-controls {
+    margin-bottom: 20px;
+}
+
+.uk-input {
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--text-color);
+    padding: 12px 15px;
+}
+
+.uk-button-primary {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.1rem;
+    border-radius: 6px;
+    margin-top: 20px;
+}
+
+.uk-text-muted {
+    color: var(--text-muted) !important;
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+
+@media (max-width: 960px) {
     .settings-card {
-        background: var(--card-bg);
         padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin: 0 15px;
     }
-
-    .settings-card .uk-card-title {
-        color: var(--text-color);
-        font-size: 1.2rem;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid var(--border-color);
+    
+    .uk-tab > li > a {
+        padding: 10px 15px;
+        font-size: 0.9rem;
     }
-
-    .uk-form-label {
-        font-weight: 500;
-        margin-bottom: 5px;
-    }
-
-    .uk-input {
-        border-radius: 4px;
-    }
-
-    .uk-button {
-        border-radius: 4px;
-        font-weight: 500;
-    }
-
-    /* Update SweetAlert2 styles */
-    .swal-custom-container {
-        z-index: 1500 !important;
-    }
-
-    .swal-custom-popup {
-        background: var(--sidebar-bg) !important;
-        color: var(--text-color) !important;
-        border-radius: 8px !important;
-        padding: 1em !important;
-    }
-
-    .swal2-backdrop-show {
-        background: rgba(0,0,0,0.7) !important;
-    }
-
-    .swal2-html-container {
-        margin: 1em 0 !important;
-    }
-
-    .swal2-actions {
-        margin-top: 1em !important;
-    }
-
-    /* Style the file input */
-    .swal2-popup .uk-input[type="file"] {
-        padding: 8px;
-        margin-top: 10px;
-        width: 100%;
-        background: var(--input-bg);
-        color: var(--text-color);
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-    }
-
-    .uk-form-controls .uk-flex {
-        gap: 10px;
-    }
-
-    #generate-api-key-btn {
-        white-space: nowrap;
-        padding: 0 20px;
-        height: 40px;
-        line-height: 38px;
-        border-radius: 4px;
-    }
-
-    .uk-form-controls input[readonly] {
-        background-color: var(--input-bg);
-        color: var(--text-color);
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-    }
+}
 </style>
 {% endblock %}

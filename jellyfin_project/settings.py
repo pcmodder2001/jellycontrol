@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 import os
 from pathlib import Path
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -33,7 +32,7 @@ LICENSING_SERVER_URL = 'http://192.168.0.93:8001/licenses'  # replace with actua
 SECRET_KEY = 'django-insecure-@1*ll#bwr*=jji#cqp15gpf4+5q8gftfh$5ul92ms(@%$bi-d$'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     'signup.ccmediastreaming.com',
@@ -178,11 +177,11 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # settings.py
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # e.g., smtp.gmail.com for Gmail
-EMAIL_PORT = 587  # or 465 for SSL
-EMAIL_USE_TLS = True  # or EMAIL_USE_SSL = True if using port 465
-EMAIL_HOST_USER = 'brad.crampton2001@gmail.com'
-EMAIL_HOST_PASSWORD = 'sbyv npwj sodi yyzw'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your-email@gmail.com'  # Set your default email
+EMAIL_HOST_PASSWORD = 'your-app-password'  # Set your default password
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
