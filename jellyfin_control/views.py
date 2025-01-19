@@ -1243,31 +1243,42 @@ def settings(request):
     email_settings = EmailSettings.objects.first()
     
     if request.method == 'POST':
-        if 'update_config' in request.POST:
-            form = ConfigForm(request.POST, instance=config)
-            email_form = EmailSettingsForm(instance=email_settings)
-            if form.is_valid():
-                form.save()
-                messages.success(request, 'Server settings updated successfully.')
-                return redirect('settings')
+        if 'update_jellyfin' in request.POST:
+            # Update only Jellyfin settings
+            config.server_url = request.POST.get('server_url')
+            config.jellyfin_api_key = request.POST.get('jellyfin_api_key')
+            config.save()
+            messages.success(request, 'Jellyfin settings updated successfully.')
+            
+        elif 'update_jellyseerr' in request.POST:
+            # Update only Jellyseerr settings
+            config.jellyseerr_url = request.POST.get('jellyseerr_url')
+            config.jellyseerr_api_key = request.POST.get('jellyseerr_api_key')
+            config.save()
+            messages.success(request, 'Jellyseerr settings updated successfully.')
+            
+        elif 'update_tmdb' in request.POST:
+            # Update only TMDB settings
+            config.tmdb_access_token = request.POST.get('tmdb_access_token')
+            config.tmdb_api_key = request.POST.get('tmdb_api_key')
+            config.save()
+            messages.success(request, 'TMDB settings updated successfully.')
+            
         elif 'update_email' in request.POST:
             email_form = EmailSettingsForm(request.POST, instance=email_settings)
-            form = ConfigForm(instance=config)
             if email_form.is_valid():
                 email_form.save()
-                # Update email settings
                 from . import email_config
                 email_config.update_email_settings()
                 messages.success(request, 'Email settings updated successfully.')
-                return redirect('settings')
-    else:
-        form = ConfigForm(instance=config)
-        email_form = EmailSettingsForm(instance=email_settings)
+        
+        return redirect('settings')
 
-    return render(request, 'settings.html', {
-        'form': form,
-        'email_form': email_form
-    })
+    context = {
+        'config': config,
+        'email_form': EmailSettingsForm(instance=email_settings)
+    }
+    return render(request, 'settings.html', context)
 
 @login_required
 @superuser_required

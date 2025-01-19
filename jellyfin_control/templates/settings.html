@@ -27,16 +27,19 @@
                             <div class="uk-margin">
                                 <label class="uk-form-label">Server URL</label>
                                 <div class="uk-form-controls">
-                                    {{ form.server_url }}
+                                    <input type="url" name="server_url" class="uk-input" value="{{ config.server_url|default:'' }}">
                                 </div>
                             </div>
                             <div class="uk-margin">
                                 <label class="uk-form-label">API Key</label>
                                 <div class="uk-form-controls">
-                                    {{ form.jellyfin_api_key }}
+                                    <div class="uk-inline uk-width-1-1">
+                                        <input type="password" name="jellyfin_api_key" class="uk-input toggle-password" value="{{ config.jellyfin_api_key|default:'' }}">
+                                        <a class="uk-form-icon uk-form-icon-flip password-toggle" uk-icon="icon: eye" style="cursor: pointer;"></a>
+                                    </div>
                                 </div>
                             </div>
-                            <button type="submit" name="update_config" class="uk-button uk-button-primary">Save Server Settings</button>
+                            <button type="submit" name="update_jellyfin" class="uk-button uk-button-primary">Save Server Settings</button>
                         </form>
                     </div>
                 </div>
@@ -52,16 +55,19 @@
                             <div class="uk-margin">
                                 <label class="uk-form-label">Jellyseerr URL</label>
                                 <div class="uk-form-controls">
-                                    {{ form.jellyseerr_url }}
+                                    <input type="url" name="jellyseerr_url" class="uk-input" value="{{ config.jellyseerr_url|default:'' }}">
                                 </div>
                             </div>
                             <div class="uk-margin">
                                 <label class="uk-form-label">API Key</label>
                                 <div class="uk-form-controls">
-                                    {{ form.jellyseerr_api_key }}
+                                    <div class="uk-inline uk-width-1-1">
+                                        <input type="password" name="jellyseerr_api_key" class="uk-input toggle-password" value="{{ config.jellyseerr_api_key|default:'' }}">
+                                        <a class="uk-form-icon uk-form-icon-flip password-toggle" uk-icon="icon: eye" style="cursor: pointer;"></a>
+                                    </div>
                                 </div>
                             </div>
-                            <button type="submit" name="update_config" class="uk-button uk-button-primary">Save Jellyseerr Settings</button>
+                            <button type="submit" name="update_jellyseerr" class="uk-button uk-button-primary">Save Jellyseerr Settings</button>
                         </form>
                     </div>
                 </div>
@@ -77,16 +83,22 @@
                             <div class="uk-margin">
                                 <label class="uk-form-label">Access Token</label>
                                 <div class="uk-form-controls">
-                                    {{ form.tmdb_access_token }}
+                                    <div class="uk-inline uk-width-1-1">
+                                        <input type="password" name="tmdb_access_token" class="uk-input toggle-password" value="{{ config.tmdb_access_token|default:'' }}">
+                                        <a class="uk-form-icon uk-form-icon-flip password-toggle" uk-icon="icon: eye" style="cursor: pointer;"></a>
+                                    </div>
                                 </div>
                             </div>
                             <div class="uk-margin">
                                 <label class="uk-form-label">API Key</label>
                                 <div class="uk-form-controls">
-                                    {{ form.tmdb_api_key }}
+                                    <div class="uk-inline uk-width-1-1">
+                                        <input type="password" name="tmdb_api_key" class="uk-input toggle-password" value="{{ config.tmdb_api_key|default:'' }}">
+                                        <a class="uk-form-icon uk-form-icon-flip password-toggle" uk-icon="icon: eye" style="cursor: pointer;"></a>
+                                    </div>
                                 </div>
                             </div>
-                            <button type="submit" name="update_config" class="uk-button uk-button-primary">Save TMDB Settings</button>
+                            <button type="submit" name="update_tmdb" class="uk-button uk-button-primary">Save TMDB Settings</button>
                         </form>
                     </div>
                 </div>
@@ -99,7 +111,9 @@
                     <div class="settings-form-container">
                         <form method="post" class="uk-form-stacked">
                             {% csrf_token %}
+                            <!-- Regular fields except password and checkboxes -->
                             {% for field in email_form %}
+                            {% if field.name != 'smtp_password' and field.name != 'use_tls' and field.name != 'use_ssl' %}
                             <div class="uk-margin">
                                 <label class="uk-form-label" for="{{ field.id_for_label }}">
                                     {{ field.label }}
@@ -111,7 +125,37 @@
                                     {% endif %}
                                 </div>
                             </div>
+                            {% endif %}
                             {% endfor %}
+
+                            <!-- SMTP Password field with toggle -->
+                            <div class="uk-margin">
+                                <label class="uk-form-label">SMTP Password</label>
+                                <div class="uk-form-controls">
+                                    <div class="uk-inline uk-width-1-1">
+                                        <input type="password" name="smtp_password" class="uk-input toggle-password" value="{{ email_form.smtp_password.value|default:'' }}">
+                                        <a class="uk-form-icon uk-form-icon-flip password-toggle" uk-icon="icon: eye" style="cursor: pointer;"></a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Checkbox fields -->
+                            {% for field in email_form %}
+                            {% if field.name == 'use_tls' or field.name == 'use_ssl' %}
+                            <div class="uk-margin">
+                                <label class="uk-form-label" for="{{ field.id_for_label }}">
+                                    {{ field.label }}
+                                </label>
+                                <div class="uk-form-controls">
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                    <div class="uk-text-small uk-text-muted">{{ field.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+
                             <button type="submit" name="update_email" class="uk-button uk-button-primary">Save Email Settings</button>
                         </form>
                     </div>
@@ -120,6 +164,25 @@
         </ul>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.password-toggle').forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent default link behavior
+            const input = this.closest('.uk-inline').querySelector('.toggle-password');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                UIkit.icon(this).icon = 'eye-slash';
+            } else {
+                input.type = 'password';
+                UIkit.icon(this).icon = 'eye';
+            }
+        });
+    });
+});
+</script>
 
 <style>
 .settings-container {
@@ -207,6 +270,21 @@
     color: var(--text-muted) !important;
     font-size: 0.9rem;
     margin-top: 4px;
+}
+
+.uk-form-icon-flip {
+    right: 10px !important;
+}
+
+.password-toggle {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+}
+
+.password-toggle:hover {
+    opacity: 1;
+    color: var(--primary-color);
 }
 
 @media (max-width: 960px) {

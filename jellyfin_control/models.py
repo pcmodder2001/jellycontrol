@@ -145,7 +145,6 @@ class LogEntry(models.Model):
     
     
 class EmailSettings(models.Model):
-    company_name = models.CharField(max_length=100, default='Company Name')
     from_email = models.EmailField(
         verbose_name='From Email',
         help_text='Email address that will be used to send emails'
@@ -170,4 +169,4 @@ class EmailSettings(models.Model):
         verbose_name_plural = 'Email Settings'
 
     def __str__(self):
-        return f"Email Settings - {self.company_name}"
+        return f"Email Settings"

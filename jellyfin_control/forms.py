@@ -18,19 +18,18 @@ class ConfigForm(forms.ModelForm):
         ]
         widgets = {
             'server_url': forms.URLInput(attrs={'class': 'uk-input'}),
-            'jellyfin_api_key': forms.TextInput(attrs={'class': 'uk-input'}),
+            'jellyfin_api_key': forms.PasswordInput(attrs={'class': 'uk-input', 'render_value': True}),
             'invite_code': forms.TextInput(attrs={'class': 'uk-input'}),
-            'tmdb_access_token': forms.TextInput(attrs={'class': 'uk-input'}),
-            'tmdb_api_key': forms.TextInput(attrs={'class': 'uk-input'}),
+            'tmdb_access_token': forms.PasswordInput(attrs={'class': 'uk-input', 'render_value': True}),
+            'tmdb_api_key': forms.PasswordInput(attrs={'class': 'uk-input', 'render_value': True}),
             'jellyseerr_url': forms.URLInput(attrs={'class': 'uk-input'}),
-            'jellyseerr_api_key': forms.TextInput(attrs={'class': 'uk-input'}),
+            'jellyseerr_api_key': forms.PasswordInput(attrs={'class': 'uk-input', 'render_value': True}),
         }
 
 class EmailSettingsForm(forms.ModelForm):
     class Meta:
         model = EmailSettings
         fields = [
-            'company_name',
             'from_email',
             'site_url',
             'support_email',
@@ -42,8 +41,6 @@ class EmailSettingsForm(forms.ModelForm):
             'use_ssl'
         ]
         widgets = {
-            'smtp_password': forms.PasswordInput(render_value=True),
-            'company_name': forms.TextInput(attrs={'class': 'uk-input'}),
             'from_email': forms.EmailInput(attrs={'class': 'uk-input'}),
             'site_url': forms.URLInput(attrs={'class': 'uk-input'}),
             'support_email': forms.EmailInput(attrs={'class': 'uk-input'}),

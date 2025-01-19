@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, Config, Invitation, License, Function, LogEntry
+from .models import CustomUser, Config, Invitation, License, Function, LogEntry, EmailSettings
 
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
@@ -27,3 +27,4 @@ admin.site.register(Invitation)
 admin.site.register(License)
 admin.site.register(Function)
 admin.site.register(LogEntry)
+admin.site.register(EmailSettings)
