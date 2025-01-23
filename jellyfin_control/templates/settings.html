@@ -13,6 +13,7 @@
             <li><a href="#"><span uk-icon="icon: play-circle" class="uk-margin-small-right"></span>Jellyseerr</a></li>
             <li><a href="#"><span uk-icon="icon: video-camera" class="uk-margin-small-right"></span>TMDB</a></li>
             <li><a href="#"><span uk-icon="icon: mail" class="uk-margin-small-right"></span>Email</a></li>
+            <li><a href="#"><span uk-icon="icon: database" class="uk-margin-small-right"></span>Database</a></li>
         </ul>
 
         <!-- Content Area -->
@@ -111,9 +112,8 @@
                     <div class="settings-form-container">
                         <form method="post" class="uk-form-stacked">
                             {% csrf_token %}
-                            <!-- Regular fields except password and checkboxes -->
                             {% for field in email_form %}
-                            {% if field.name != 'smtp_password' and field.name != 'use_tls' and field.name != 'use_ssl' %}
+                            {% if field.name != 'smtp_password' %}
                             <div class="uk-margin">
                                 <label class="uk-form-label" for="{{ field.id_for_label }}">
                                     {{ field.label }}
@@ -127,7 +127,6 @@
                             </div>
                             {% endif %}
                             {% endfor %}
-
                             <!-- SMTP Password field with toggle -->
                             <div class="uk-margin">
                                 <label class="uk-form-label">SMTP Password</label>
@@ -138,26 +137,56 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Checkbox fields -->
-                            {% for field in email_form %}
-                            {% if field.name == 'use_tls' or field.name == 'use_ssl' %}
-                            <div class="uk-margin">
-                                <label class="uk-form-label" for="{{ field.id_for_label }}">
-                                    {{ field.label }}
-                                </label>
-                                <div class="uk-form-controls">
-                                    {{ field }}
-                                    {% if field.help_text %}
-                                    <div class="uk-text-small uk-text-muted">{{ field.help_text }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% endif %}
-                            {% endfor %}
-
                             <button type="submit" name="update_email" class="uk-button uk-button-primary">Save Email Settings</button>
                         </form>
+                    </div>
+                </div>
+            </li>
+
+            <!-- Database Tab -->
+            <li>
+                <div class="settings-card">
+                    <h2 class="uk-card-title">Database Management</h2>
+                    <div class="settings-form-container">
+                        <!-- Download Database -->
+                        <div class="uk-margin">
+                            <h3 class="uk-h4">Download Database</h3>
+                            <p class="uk-text-muted">Download a backup copy of your database</p>
+                            <a href="{% url 'download_database' %}" class="uk-button uk-button-primary">
+                                <span uk-icon="download" class="uk-margin-small-right"></span>
+                                Download Database
+                            </a>
+                        </div>
+
+                        <!-- Upload Database -->
+                        <div class="uk-margin uk-margin-large-top">
+                            <h3 class="uk-h4">Upload Database</h3>
+                            <p class="uk-text-muted">Upload a database backup file</p>
+                            <form method="post" enctype="multipart/form-data" action="{% url 'upload_database' %}">
+                                {% csrf_token %}
+                                <div class="uk-margin">
+                                    <div class="uk-form-controls">
+                                        <div class="uk-placeholder uk-text-center">
+                                            <span uk-icon="icon: cloud-upload"></span>
+                                            <span class="uk-text-middle">Select a database file to upload</span>
+                                            <input type="file" name="database" accept=".sqlite3" class="uk-margin-small-top">
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="uk-button uk-button-primary">
+                                    <span uk-icon="upload" class="uk-margin-small-right"></span>
+                                    Upload Database
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Warning Message -->
+                        <div class="uk-alert-warning" uk-alert>
+                            <p>
+                                <span uk-icon="warning" class="uk-margin-small-right"></span>
+                                Warning: Uploading a new database will replace your current database. Make sure to download a backup first.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </li>
@@ -182,6 +211,55 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// File upload handling
+UIkit.upload('.js-upload', {
+    url: '{% url "upload_database" %}',
+    multiple: false,
+    beforeSend: function () {
+        console.log('beforeSend', arguments);
+    },
+    beforeAll: function () {
+        console.log('beforeAll', arguments);
+    },
+    load: function () {
+        console.log('load', arguments);
+    },
+    error: function () {
+        console.log('error', arguments);
+    },
+    complete: function () {
+        console.log('complete', arguments);
+    },
+    loadStart: function (e) {
+        console.log('loadStart', arguments);
+        bar.removeAttribute('hidden');
+        bar.max = e.total;
+        bar.value = e.loaded;
+    },
+    progress: function (e) {
+        console.log('progress', arguments);
+        bar.max = e.total;
+        bar.value = e.loaded;
+    },
+    loadEnd: function (e) {
+        console.log('loadEnd', arguments);
+        bar.max = e.total;
+        bar.value = e.loaded;
+    },
+    completeAll: function () {
+        console.log('completeAll', arguments);
+        setTimeout(function () {
+            bar.setAttribute('hidden', 'hidden');
+        }, 1000);
+        
+        // Reload the page after successful upload
+        window.location.reload();
+    }
+});
+
+// Get the progress bar
+var bar = document.getElementById('js-progressbar');
 </script>
 
 <style>
@@ -297,6 +375,31 @@ document.addEventListener('DOMContentLoaded', function() {
         padding: 10px 15px;
         font-size: 0.9rem;
     }
+}
+
+.uk-placeholder {
+    border: 2px dashed var(--border-color);
+    background: var(--card-bg);
+    padding: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.uk-placeholder:hover {
+    border-color: var(--primary-color);
+    background: rgba(var(--primary-rgb), 0.05);
+}
+
+.uk-progress {
+    margin-top: 15px;
+}
+
+.uk-alert-warning {
+    background: rgba(255, 152, 0, 0.1);
+    color: #ff9800;
+    border: 1px solid rgba(255, 152, 0, 0.2);
+    border-radius: 6px;
+    margin-top: 30px;
 }
 </style>
 {% endblock %}
