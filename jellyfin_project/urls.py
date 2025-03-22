@@ -64,10 +64,9 @@ urlpatterns = [
     path('upload-db/', views.upload_database, name='upload_database'),
     path('proxy/jellyseerr/request/', views.proxy_jellyseerr_request, name='proxy_jellyseerr_request'),
     path('search-tmdb-shows/', views.search_tmdb_shows, name='search_tmdb_shows'),
-
-
-
-
+    path('blacklist/', views.blacklist_view, name='blacklist'),
+    path('blacklist/add/', views.add_blacklist, name='add_blacklist'),
+    path('blacklist/remove/<int:blacklist_id>/', views.remove_blacklist, name='remove_blacklist'),
 ]
 
 

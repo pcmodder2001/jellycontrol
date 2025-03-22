@@ -21,14 +21,38 @@ def length_to_time(value):
 
 @register.filter
 def iso_to_local(value):
-    if value:
+    if not value:
+        return value
+
+    try:
+        # Try parsing with datetime.fromisoformat first
         try:
-            dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
-            dt_local = dt.astimezone()
-            return dt_local.strftime('%H:%M %p, %B %d, %Y')
-        except (ValueError, OSError) as e:
-            return value  # In case of an error, return the original value
-    return value
+            # Remove trailing Z and replace with +00:00 for UTC
+            cleaned_value = value.replace('Z', '+00:00')
+            # Handle microseconds if present
+            if '.' in cleaned_value:
+                base, ms = cleaned_value.split('.')
+                if '+' in ms or '-' in ms:
+                    tz = ms[ms.find('+'):] if '+' in ms else ms[ms.find('-'):]
+                    ms = ms[:ms.find('+') if '+' in ms else ms.find('-')]
+                    ms = ms[:6].ljust(6, '0')  # Pad to exactly 6 digits
+                    cleaned_value = f"{base}.{ms}{tz}"
+                else:
+                    ms = ms[:6].ljust(6, '0')  # Pad to exactly 6 digits
+                    cleaned_value = f"{base}.{ms}+00:00"
+            
+            dt = datetime.fromisoformat(cleaned_value)
+        except ValueError:
+            # Fallback to parsing common ISO format
+            dt = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            dt = dt.replace(tzinfo=timezone.utc)
+        
+        # Convert to local timezone
+        dt_local = dt.astimezone()
+        return dt_local.strftime('%I:%M %p, %B %d, %Y')
+    except Exception as e:
+        print(f"Date parsing error for {value}: {str(e)}")
+        return value
 
 @register.filter
 def split_string(value, delimiter=','):

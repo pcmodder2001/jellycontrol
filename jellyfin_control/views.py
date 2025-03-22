@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from jellyfin_project import settings
-from .models import Config, CustomUser, Function, Invitation, License, LogEntry, EmailSettings
+from .models import Config, CustomUser, Function, Invitation, License, LogEntry, EmailSettings, BlacklistedEmail
 import requests
 from django.contrib.auth import login
 from django.http import HttpResponseBadRequest
@@ -1039,7 +1039,7 @@ def register(request, invite_code):
         invitation = Invitation.objects.get(invite_code=invite_code)
     except Invitation.DoesNotExist:
         messages.error(request, "Invalid invitation code.")
-        return redirect('enter_invite')  # Redirect to the enter_invite page without invite_code
+        return redirect('enter_invite')
 
     if not invitation.has_space_left():
         messages.error(request, "No spaces left for this invitation code.")
@@ -1055,7 +1055,12 @@ def register(request, invite_code):
         last_name = request.POST.get('last_name')
         password = request.POST.get('password')
         password2 = request.POST.get('password2')
-        
+
+        # Check if email is blacklisted
+        if is_email_blacklisted(email):
+            messages.error(request, "This email address has been banned from registration.")
+            log_action('WARNING', f'Blocked registration attempt from blacklisted email: {email}', invitation.user)
+            return redirect('enter_invite')
 
         # Check if the username (email) is already taken in Jellyfin
         access_token = config.jellyfin_api_key
@@ -1075,9 +1080,9 @@ def register(request, invite_code):
             messages.error(request, f"Failed to check username: {str(e)}")
             log_message = (f"Failed to check username: {str(e)}")
             LogEntry.objects.create(
-            action='ERROR',
-            user=invitation.user,
-            message=log_message
+                action='ERROR',
+                user=invitation.user,
+                message=log_message
             )
             return redirect('enter_invite')
 
@@ -1090,7 +1095,7 @@ def register(request, invite_code):
         jellyfin_user_data = {
             'Name': email,
             'Password': password,
-            'EnableAutoLogin': True  # Adjust as per your Jellyfin API requirements
+            'EnableAutoLogin': True
         }
 
         try:
@@ -2474,3 +2479,61 @@ def generate_api_key():
     length = 32
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
+
+@login_required
+@superuser_required
+def blacklist_view(request):
+    blacklisted_emails = BlacklistedEmail.objects.all()
+    return render(request, 'control/blacklist.html', {'blacklisted_emails': blacklisted_emails})
+
+@login_required
+@superuser_required
+def add_blacklist(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            email = data.get('email')
+            reason = data.get('reason')
+
+            if not email:
+                return JsonResponse({'success': False, 'error': 'Email is required'})
+
+            # Check if email is already blacklisted
+            if BlacklistedEmail.objects.filter(email__iexact=email).exists():
+                return JsonResponse({'success': False, 'error': 'Email is already blacklisted'})
+
+            BlacklistedEmail.objects.create(
+                email=email.lower(),
+                reason=reason,
+                created_by=request.user
+            )
+
+            log_action('INFO', f'Email {email} added to blacklist by {request.user.email}', request.user)
+            return JsonResponse({'success': True})
+
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON data'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@login_required
+@superuser_required
+def remove_blacklist(request, blacklist_id):
+    if request.method == 'POST':
+        try:
+            blacklisted_email = get_object_or_404(BlacklistedEmail, id=blacklist_id)
+            email = blacklisted_email.email
+            blacklisted_email.delete()
+            
+            log_action('INFO', f'Email {email} removed from blacklist by {request.user.email}', request.user)
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+def is_email_blacklisted(email):
+    """Helper function to check if an email is blacklisted"""
+    return BlacklistedEmail.objects.filter(email__iexact=email).exists()

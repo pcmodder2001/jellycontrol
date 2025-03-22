@@ -642,6 +642,12 @@
                         <span>Logs</span>
                     </a>
             </li>
+            <li class="{% if request.path == '/blacklist/' %}uk-active{% endif %}">
+                    <a href="{% url 'blacklist' %}">
+                        <span uk-icon="ban"></span>
+                        <span>Email Blacklist</span>
+                    </a>
+            </li>
             {% endif %}
             <li class="{% if request.path == '/invitations/' %}uk-active{% endif %}">
                     <a href="{% url 'invitation_list' %}">

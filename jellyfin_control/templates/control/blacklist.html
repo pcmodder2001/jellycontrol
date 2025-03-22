@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}Email Blacklist{% endblock %}
+
+{% block content %}
+<div class="uk-container">
+    <h1 class="uk-heading-line uk-text-center"><span>Email Blacklist</span></h1>
+
+    <!-- Add Email Form -->
+    <div class="uk-margin-medium-bottom">
+        <button class="uk-button uk-button-primary" onclick="showAddEmailModal()">
+            <span uk-icon="plus"></span> Add Email to Blacklist
+        </button>
+    </div>
+
+    <!-- Blacklisted Emails Table -->
+    <div class="uk-overflow-auto">
+        <table class="uk-table uk-table-divider uk-table-hover uk-table-middle">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Reason</th>
+                    <th>Added By</th>
+                    <th>Date Added</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for email in blacklisted_emails %}
+                <tr>
+                    <td>{{ email.email }}</td>
+                    <td>{{ email.reason|default:"No reason provided" }}</td>
+                    <td>{{ email.created_by.email }}</td>
+                    <td>{{ email.created_at|date:"M d, Y H:i" }}</td>
+                    <td>
+                        <button class="uk-button uk-button-danger uk-button-small" 
+                                onclick="confirmDelete('{{ email.id }}', '{{ email.email|escapejs }}')">
+                            <span uk-icon="trash"></span> Remove
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="uk-text-center">No blacklisted emails found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function showAddEmailModal() {
+    Swal.fire({
+        title: 'Add Email to Blacklist',
+        html: `
+            <form id="addEmailForm" class="uk-form-stacked">
+                <div class="uk-margin">
+                    <label class="uk-form-label">Email Address:</label>
+                    <input class="uk-input" id="email" type="email" required>
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label">Reason (optional):</label>
+                    <textarea class="uk-textarea" id="reason" rows="3"></textarea>
+                </div>
+            </form>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Add to Blacklist',
+        cancelButtonText: 'Cancel',
+        preConfirm: () => {
+            const email = document.getElementById('email').value;
+            const reason = document.getElementById('reason').value;
+            
+            if (!email) {
+                Swal.showValidationMessage('Please enter an email address');
+                return false;
+            }
+            
+            return fetch('{% url "add_blacklist" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ email, reason })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to add email to blacklist');
+                }
+                return data;
+            });
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Success!',
+                text: 'Email has been added to the blacklist.',
+                icon: 'success'
+            }).then(() => {
+                window.location.reload();
+            });
+        }
+    });
+}
+
+function confirmDelete(id, email) {
+    Swal.fire({
+        title: 'Remove from Blacklist?',
+        text: `Are you sure you want to remove ${email} from the blacklist?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, remove it',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`{% url "remove_blacklist" blacklist_id=0 %}`.replace('0', id), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Removed!',
+                        text: 'Email has been removed from the blacklist.',
+                        icon: 'success'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    throw new Error(data.error || 'Failed to remove email');
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: 'Error!',
+                    text: error.message,
+                    icon: 'error'
+                });
+            });
+        }
+    });
+}
+</script>
+{% endblock %} 

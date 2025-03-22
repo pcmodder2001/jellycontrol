@@ -170,3 +170,15 @@ class EmailSettings(models.Model):
 
     def __str__(self):
         return f"Email Settings"
+
+class BlacklistedEmail(models.Model):
+    email = models.CharField(max_length=255, unique=True)
+    reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return self.email
+
+    class Meta:
+        ordering = ['-created_at']
