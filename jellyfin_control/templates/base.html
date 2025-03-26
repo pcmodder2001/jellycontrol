@@ -52,6 +52,7 @@
             color: var(--text-color);
             min-height: 100vh;
             margin: 0;
+            overflow-x: hidden; /* Prevent horizontal scroll when sidebar is open */
         }
 
         /* Sidebar Styles */
@@ -65,6 +66,7 @@
             padding: 20px 0;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
             z-index: 1000;
+            transition: transform 0.3s ease;
         }
 
         .sidebar .logo {
@@ -114,6 +116,7 @@
             align-items: center;
             gap: 8px;
             border: 1px solid var(--border-color);
+            pointer-events: auto; /* Ensure button is clickable */
         }
 
         .theme-toggle:hover {
@@ -596,13 +599,97 @@
             max-width: 350px !important;
             border-radius: 8px !important;
         }
+
+        /* Mobile Menu Toggle Button */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: var(--sidebar-bg);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .mobile-menu-toggle span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background-color: var(--text-color);
+            margin: 4px 0;
+            transition: 0.3s;
+        }
+
+        /* Sidebar Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--overlay-bg);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 960px) {
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+                opacity: 1;
+            }
+
+            .main-content {
+                margin-left: 0 !important;
+                padding-left: 15px;
+                padding-right: 15px;
+            }
+
+            /* Adjust theme toggle position for mobile */
+            .theme-toggle {
+                top: 15px;
+                right: 15px;
+                bottom: auto;
+                left: auto;
+            }
+        }
     </style>
     {% csrf_token %}
 </head>
 
 <body>
+    <!-- Mobile Menu Toggle Button -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <!-- Sidebar -->
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <a href="{% url 'home' %}">
                 <img src="{% static 'images/custom_logo.png' %}"
                  alt="Logo" 
@@ -691,10 +778,10 @@
     </div>
 
     <!-- Theme Toggle Button -->
-    <div class="theme-toggle" onclick="toggleTheme()">
+    <button class="theme-toggle" onclick="toggleTheme(event)">
         <span class="theme-icon" uk-icon="icon: lifesaver"></span>
         <span class="theme-text">Light Mode</span>
-        </div>
+    </button>
 
     <!-- Main Content -->
     <div class="main-content">
@@ -707,7 +794,11 @@
 
     <script>
         // Theme Toggle Function
-        function toggleTheme() {
+        function toggleTheme(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
             const html = document.documentElement;
             const currentTheme = html.getAttribute('data-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -731,11 +822,18 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Set initial theme
             const savedTheme = localStorage.getItem('theme') || 'light';
-            const themeIcon = document.querySelector('.theme-icon');
-            const themeText = document.querySelector('.theme-text');
-            
             document.documentElement.setAttribute('data-theme', savedTheme);
             
+            // Update theme toggle button state
+            const themeIcon = document.querySelector('.theme-icon');
+            const themeText = document.querySelector('.theme-text');
+            if (savedTheme === 'dark') {
+                themeIcon.setAttribute('uk-icon', 'icon: cloud');
+                themeText.textContent = 'Dark Mode';
+            } else {
+                themeIcon.setAttribute('uk-icon', 'icon: lifesaver');
+                themeText.textContent = 'Light Mode';
+            }
 
             // Handle Django messages
             {% if messages %}
@@ -752,6 +850,31 @@
                     });
                 {% endfor %}
             {% endif %}
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+                document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+            }
+
+            mobileMenuToggle.addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
+
+            // Close sidebar when clicking a link on mobile
+            const sidebarLinks = sidebar.querySelectorAll('a');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 960) {
+                        toggleSidebar();
+                    }
+                });
+            });
         });
     </script>
 

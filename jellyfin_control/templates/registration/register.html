@@ -16,10 +16,10 @@
                 <div class="uk-text-center uk-margin-small-bottom">
                     <img src="{% static 'images/custom_logo.png' %}" 
                          alt="Logo" 
-                         class="uk-margin-small-bottom"
+                         class="uk-margin-small-bottom register-logo"
                          width="200">
-                    <h1 class="uk-heading-small uk-margin-remove-top">Create Account</h1>
-                    <p class="uk-text-muted">Please fill in your details to register</p>
+                    <h1 class="uk-heading-small uk-margin-remove-top register-title">Create Account</h1>
+                    <p class="uk-text-muted register-subtitle">Please fill in your details to register</p>
                 </div>
 
                 <input type="hidden" name="invite_code" value="{{ invite_code }}">
@@ -30,7 +30,7 @@
                     <div class="uk-form-controls">
                         <div class="uk-inline uk-width-1-1">
                             <span class="uk-form-icon" uk-icon="icon: mail"></span>
-                            <input class="uk-input" id="email" name="email" type="email" required>
+                            <input class="uk-input uk-form-large" id="email" name="email" type="email" required>
                         </div>
                     </div>
                 </div>
@@ -41,7 +41,7 @@
                     <div class="uk-form-controls">
                         <div class="uk-inline uk-width-1-1">
                             <span class="uk-form-icon" uk-icon="icon: user"></span>
-                            <input class="uk-input" id="first_name" name="first_name" type="text" required>
+                            <input class="uk-input uk-form-large" id="first_name" name="first_name" type="text" required>
                         </div>
                     </div>
                 </div>
@@ -52,7 +52,7 @@
                     <div class="uk-form-controls">
                         <div class="uk-inline uk-width-1-1">
                             <span class="uk-form-icon" uk-icon="icon: user"></span>
-                            <input class="uk-input" id="last_name" name="last_name" type="text" required>
+                            <input class="uk-input uk-form-large" id="last_name" name="last_name" type="text" required>
                         </div>
                     </div>
                 </div>
@@ -63,7 +63,7 @@
                     <div class="uk-form-controls">
                         <div class="uk-inline uk-width-1-1">
                             <span class="uk-form-icon" uk-icon="icon: lock"></span>
-                            <input class="uk-input" id="password" name="password" type="password" required>
+                            <input class="uk-input uk-form-large" id="password" name="password" type="password" required>
                         </div>
                     </div>
                 </div>
@@ -74,14 +74,14 @@
                     <div class="uk-form-controls">
                         <div class="uk-inline uk-width-1-1">
                             <span class="uk-form-icon" uk-icon="icon: lock"></span>
-                            <input class="uk-input" id="password2" name="password2" type="password" required>
+                            <input class="uk-input uk-form-large" id="password2" name="password2" type="password" required>
                         </div>
                     </div>
                 </div>
 
                 <!-- Submit Button -->
                 <div class="uk-margin">
-                    <button type="submit" class="uk-button uk-button-primary uk-width-1-1">
+                    <button type="submit" class="uk-button uk-button-primary uk-width-1-1 uk-button-large">
                         <span uk-icon="check"></span> Create Account
                     </button>
                 </div>
@@ -93,7 +93,7 @@
 
                 <!-- Back Link -->
                 <div class="uk-margin uk-text-center">
-                    <a href="{% url 'login' %}" class="uk-button uk-button-text uk-text-muted">
+                    <a href="{% url 'login' %}" class="uk-button uk-button-text uk-text-muted uk-button-large">
                         <span uk-icon="sign-in"></span> Already Registered? Login
                     </a>
                 </div>
@@ -101,4 +101,161 @@
         </div>
     </div>
 </div>
+
+<style>
+/* Container Styles */
+.uk-container-register {
+    max-width: 600px !important;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* Background Container */
+.login-background {
+    background: var(--card-bg);
+    border-radius: 15px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Logo Styles */
+.register-logo {
+    max-width: 180px;
+    height: auto;
+    transition: transform 0.3s ease;
+}
+
+/* Title Styles */
+.register-title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.register-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+}
+
+/* Form Styles */
+.uk-form-label {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.uk-input {
+    height: 48px;
+    font-size: 1rem;
+    padding: 0 15px 0 40px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.uk-input:focus {
+    border-color: #1e87f0;
+    box-shadow: 0 0 0 2px rgba(30, 135, 240, 0.2);
+}
+
+.uk-form-icon {
+    left: 12px;
+    color: var(--text-muted);
+}
+
+/* Button Styles */
+.uk-button {
+    height: 48px;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.uk-button-primary {
+    background: linear-gradient(45deg, #77b1ef, #3b009b);
+    box-shadow: 0 2px 8px rgba(30, 135, 240, 0.2);
+}
+
+.uk-button-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(30, 135, 240, 0.3);
+}
+
+.uk-button-text {
+    padding: 0;
+    height: auto;
+    line-height: 1.5;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 640px) {
+    .uk-container-register {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .login-background {
+        border-radius: 12px;
+        padding: 20px 15px;
+    }
+
+    .register-logo {
+        max-width: 150px;
+    }
+
+    .register-title {
+        font-size: 1.75rem;
+    }
+
+    .register-subtitle {
+        font-size: 1rem;
+    }
+
+    .uk-form-label {
+        font-size: 0.95rem;
+    }
+
+    .uk-input {
+        height: 44px;
+        font-size: 0.95rem;
+        padding: 0 12px 0 36px;
+    }
+
+    .uk-form-icon {
+        left: 10px;
+    }
+
+    .uk-button {
+        height: 44px;
+        font-size: 0.95rem;
+    }
+
+    .uk-margin {
+        margin-bottom: 1rem;
+    }
+
+    .uk-margin-large-top {
+        margin-top: 2rem !important;
+    }
+
+    .uk-margin-large-bottom {
+        margin-bottom: 2rem !important;
+    }
+}
+
+/* Dark Mode Adjustments */
+[data-theme="dark"] .login-background {
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .uk-input:focus {
+    background-color: rgba(119, 177, 239, 0.1);
+}
+</style>
 {% endblock %}

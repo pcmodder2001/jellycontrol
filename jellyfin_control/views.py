@@ -2009,7 +2009,9 @@ def password_reset_confirm(request, uidb64, token):
 def list_requests(request):
     #View to retrieve a list of all requests from the Overseer API and log the actions.
     url = "https://request.ccmediastreaming.com/api/v1/request"
-    api_key = settings.JELLYSEER_API_TOKEN
+    config = Config.objects.first()
+    
+    api_key = config.JELLYSEER_API_KEY
     headers = {
         "X-Api-Key": api_key
     }
